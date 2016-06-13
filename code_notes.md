@@ -39,9 +39,9 @@ _Note_: 3 and 4 are most likely current and its derivative
 | Line(s)  | Description                                                                                        |
 |:--------:|----------------------------------------------------------------------------------------------------|
 |  251-368 | Read in input data                                                                                 |
-| __1361__ | `comp` subroutine; solves main equations                                                           |
+| __1361__ | `comp` subroutine; solves main equations and updates `xx` values                                   |
 |   2892   | `calca` sub; calculates diffusion in solid particles                                               |
-|   3114   | `erfcg` sub; error funtion compliment                                                              |
+|   3114   | `erfcg` sub; error function compliment                                                             |
 |   3156   | `band` sub; solves coupled, linear differential equations                                          |
 |   3224   | `matinv` sub; matrix inversion program for `band`                                                  |
 | __3282__ | `nucamb` sub; calculates and prints detailed profiles                                              |
