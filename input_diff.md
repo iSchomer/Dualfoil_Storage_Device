@@ -24,7 +24,9 @@
 ####Code unique to Newman
 
 before the main loop:
-```c     The exbrug exponent is being set independently for the separator and
+
+```fortran
+c     The exbrug exponent is being set independently for the separator and
 c     positive and negative electrodes as shown in the following three lines...
 
       exbrug1=1.5d0 !EX for the negative active material.
@@ -33,7 +35,8 @@ c     positive and negative electrodes as shown in the following three lines...
 ```
 
 and
-```
+
+```fortran
       if(time.eq.0.d0) then
       totLiold=0.d0
       do j=1,nj
@@ -66,7 +69,8 @@ and
 ####Code unique to 5.1
 
 inside of main loop:
-```
+
+```fortran
 	do mpa=1,npa
 	g(2+mpa)=xt(2+mpa,j,kk-1+kadd)-xx(2+mpa,j) !fix solid concentrations
 	b(2+mpa,2+mpa)=1.d0
