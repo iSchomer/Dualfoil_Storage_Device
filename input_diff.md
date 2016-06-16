@@ -76,3 +76,8 @@ inside of main loop:
 	b(2+mpa,2+mpa)=1.d0
 	enddo !mpa
 ```
+
+##Equations 
+
+1. 5.1 allows for multiple sizes of variable solid-phase diffusion coefficient (Newman allows only one)
+2. Newman Equation 3 (Butler-volmer kinetics) has large blocks of code for pore-wall fluxes that 5.1 lacks
