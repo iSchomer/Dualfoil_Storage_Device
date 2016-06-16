@@ -29,7 +29,9 @@ c     positive and negative electrodes as shown in the following three lines...
 
       exbrug1=1.5d0 !EX for the negative active material.
       exbrug2=1.5d0 !EX for the separator material.
-      exbrug3=1.5d0 !EX for the positive active material.```	
+      exbrug3=1.5d0 !EX for the positive active material.
+```
+
 and
 ```
       if(time.eq.0.d0) then
@@ -58,13 +60,15 @@ and
       if(j.eq.nj) fh=0.5d0*h3*ep3
       totLio=totLio + fh*c(1,j)
       enddo
-	print *, totLiold,totLio```
+	print *, totLiold,totLio
+```
 
 ####Code unique to 5.1
+
 inside of main loop:
 ```
 	do mpa=1,npa
 	g(2+mpa)=xt(2+mpa,j,kk-1+kadd)-xx(2+mpa,j) !fix solid concentrations
 	b(2+mpa,2+mpa)=1.d0
-	enddo !mpa```
-
+	enddo !mpa
+```
