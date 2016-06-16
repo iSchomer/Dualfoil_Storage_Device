@@ -19,6 +19,35 @@
 5. added `newrun` and `restart` logicals
 6. many other minor name changes / functional alterations
 
+###Timestep loop
+1. In initialization process marked 610, Newman calls `comp` 4 times whereas 5.1 calls it only once
+2. 5.1 includes code that prepares for a possible restart in next simulation (shown below)
+
+```fortran
+     if(iflag.eq.1) then 
+cSP   writing out the restart file
+      rewind(12)
+      write(12,*) max(rr, ts(k-1)-ts(k-2)), ts(k) ! time  - sometimes last time-step is small to just roundoff time till tend  
+      write(12,*) t ! temperature
+      write(12,*) k, (ts(i), i = 1,k)
+      do j = 1,nj ! number of variables
+      do i = 1,n ! number of equations
+         write(12,*) xx(i,j)
+         write(12,*) (xt(i,j,kk), kk=1,k)
+      end do
+      do jj = 1,nnj
+      do mpa = 1,npa
+      write(12,*) css(j,jj,mpa)
+      write(12,*) ds(j,jj,mpa)
+      end do
+      end do
+      do i = 1,npa 
+         write(12,*) utz(i,j)
+      end do
+      end do
+      end if
+```
+
 ###Comp Subroutine
 
 ####Code unique to Newman
