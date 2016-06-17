@@ -1,5 +1,5 @@
 #Discrepencies between 5.2(Newman) and 5.1
-###(Default reference to Newman code)
+_(Change is discussed relative to Newman code)_
 
 ##Input files
 
@@ -8,6 +8,8 @@
 3. removed `rs1, rs2`, density of insertion material
 4. removed `lflag` and `lpow` flags
 5. `nneg, nprop, npos` reference metals have been altered and reordered
+
+---
 
 ##Main Code
 
@@ -89,6 +91,7 @@ and line 942:
 ```
 
 lastly line 1010:
+_note: only location where file 13 is written to or read from; unclear purpose_
 
 ```fortran
       icheck = 0 ! check that all the data is read in correctly for a restart
@@ -167,6 +170,8 @@ cSP   writing out the restart file
       end do
       end if
 ```
+
+---
 
 ###Comp Subroutine
 
