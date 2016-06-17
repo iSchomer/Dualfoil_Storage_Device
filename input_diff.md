@@ -20,7 +20,7 @@
 6. many other minor name changes / functional alterations
 
 ###Timestep loop and Restart
-1. Before timestep loop, 5.1 performs a unique initialization if it is a restart (shown below):
++ Before timestep loop, 5.1 performs a unique initialization if it is a restart (shown below):
 
 line 882:
 
@@ -79,8 +79,8 @@ lastly line 1010:
       end if
 ```
 
-2. In  process marked 610 within timestep loop, Newman calls `comp` 4 times whereas 5.1 calls it only once
-3. 5.1 includes code (line 1220) at end of loop that prepares for a possible restart in next simulation (shown below) 
++ In  process marked 610 within timestep loop, Newman calls `comp` 4 times whereas 5.1 calls it only once
++ 5.1 includes code (line 1220) at end of loop that prepares for a possible restart in next simulation (shown below) 
 
 ```fortran
 cSP   writing out the time series
