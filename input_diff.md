@@ -19,6 +19,46 @@
 5. added `newrun` and `restart` logicals
 6. many other minor name changes / functional alterations
 
+###Input/Output Files
+5.1 includes the following 4 files (by number in code) that Newman does not:
++ 11: 'df_caebat.out' for CAEBAT output
++ 12: 'df_restart.dat' to store read-in data for restart
++ **13**: never opened or declared, but written to shortly before main timestep loop
++ 14: 'df_sources.dat' to store dualfoil sources
+
+###Reading in variables
+If a restart is called, certain variables are read in instead of initialized (line 463) (see below):
+
+```fortran
+      if(restart) then 
+cSP   reading the restart file
+      rewind(12)
+      read(12,*) rr, time ! time   
+      dt_out_incr = time
+      read(12,*) t ! temperature   
+      read(12,*) k, (ts(i), i = 1,k)
+      do j = 1,nj ! number of variables
+      do i = 1,n ! number of equations
+         read(12,*) xx(i,j)
+         read(12,*) (xt(i,j,kk), kk=1,k)
+      end do
+      do jj = 1,nnj
+      do mpa = 1,npa
+      read(12,*) css(j,jj,mpa)
+      read(12,*) ds(j,jj,mpa)
+      end do
+      end do
+      do i = 1,npa 
+         read(12,*) utz(i,j)
+      end do
+      end do
+      csx = utz(1,1)
+      ut1 = utz(1,1)
+      csy = utz(1,nj)
+      ut3 = utz(1,nj)
+      end if
+```
+
 ###Timestep loop and Restart
 + Before timestep loop, 5.1 performs a unique initialization if it is a restart (shown below):
 
