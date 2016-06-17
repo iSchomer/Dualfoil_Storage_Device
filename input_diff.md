@@ -7,7 +7,7 @@
 2. removed `cot1, cot3`, coulumbic capacity
 3. removed `rs1, rs2`, density of insertion material
 4. removed `lflag` and `lpow` flags
-5. `nneg, nprop, npos` reference metals have been changed significantly
+5. `nneg, nprop, npos` reference metals have been altered and reordered
 
 ##Main Code
 
@@ -19,11 +19,91 @@
 5. added `newrun` and `restart` logicals
 6. many other minor name changes / functional alterations
 
-###Timestep loop
-1. In initialization process marked 610, Newman calls `comp` 4 times whereas 5.1 calls it only once
-2. 5.1 includes code that prepares for a possible restart in next simulation (shown below)
+###Timestep loop and Restart
+1. Before timestep loop, 5.1 performs a unique initialization if it is a restart (shown below):
+
+line 882:
 
 ```fortran
+      if(restart) then
+c     do j=1,nj
+c     do i=1,n
+c     xt(i,j,k+1)=xx(i,j)
+c     enddo
+c     enddo
+      cssold(:,:,:) = css(:,:,:)
+      endif
+```
+
+and line 942:
+
+```fortran
+      if(restart) then
+      cuL = cu(L)
+      cuR = cu(L)
+      vv=xx(kp1,nj)-xx(kp1,1)
+      mcL = 1
+!     call cellpot(k,vv,1)
+      go to 412 ! skip the initialization of cell for restart
+      end if
+```
+
+lastly line 1010:
+
+```fortran
+      icheck = 0 ! check that all the data is read in correctly for a restart
+      if(icheck.eq.1.and.restart) then
+      rewind(13)
+      write(13,*) rr, ts(k) ! time  - sometimes last time-step is small to just roundoff time till tend  
+      write(13,*) t ! temperature
+      write(13,*) k, (ts(i), i = 1,k)
+      do j = 1,nj ! number of variables
+      do i = 1,n ! number of equations
+         write(13,*) xx(i,j)
+         write(13,*) (xt(i,j,kk), kk=1,k)
+      end do
+      do jj = 1,nnj
+      do mpa = 1,npa
+      write(13,*) css(j,jj,mpa)
+      write(13,*) ds(j,jj,mpa)
+      end do
+      end do
+      do i = 1,npa
+         write(13,*) utz(i,j)
+      end do
+      end do
+
+      call nucamb(k,il2)
+
+      stop
+      end if
+```
+
+2. In  process marked 610 within timestep loop, Newman calls `comp` 4 times whereas 5.1 calls it only once
+3. 5.1 includes code (line 1220) at end of loop that prepares for a possible restart in next simulation (shown below) 
+
+```fortran
+cSP   writing out the time series
+
+      dt_out_incr = dt_out_incr + (ts(k) - ts(k-1))
+c     write(14,*) 'debug', dt_out_incr, ts(k), ts(k-1),(ts(k) - ts(k-1)), tot(1)
+
+      if (dt_out_incr.ge.tot(1)) then 
+
+      dt_out_incr = 0.0 
+      rewind(11)
+      write(11,*) nj
+      write(11,*) ts(k) ! time
+      do j = 1,nj
+         write(11,*) xx(1,j), xx(6,j), xx(2,j), xx(5,j)*fc, xx(3,j) ! concentration (solute), phi_1, phi_2, jn, cs 
+      end do
+
+      rewind(14)
+      write(14,*) ts(k) ! time
+      write(14,*) qq, r_total ! source in J/(m^3.s) and resistance in ohms
+
+      endif
+
      if(iflag.eq.1) then 
 cSP   writing out the restart file
       rewind(12)
@@ -106,7 +186,7 @@ inside of main loop:
 	enddo !mpa
 ```
 
-##Equations 
+####Solver Equations 
 
-1. 5.1 allows for multiple sizes of variable solid-phase diffusion coefficient (Newman allows only one)
+1. In equation dealing with material balance in solid insertion metal, 5.1 allows for multiple sizes of variable solid-phase diffusion coefficient (Newman allows only one)
 2. Newman Equation 3 (Butler-volmer kinetics) has large blocks of code for pore-wall fluxes that 5.1 lacks
