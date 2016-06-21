@@ -22,6 +22,44 @@ Dual generates the following output files:
 * *df_caebat.out: for generating CAEBAT output; four columns of unlabeled values*
 * *df_restart.dat and df_sources.dat: used in 5.1 to initialize variables when beginning from a restart*
 
+##Important information for main code
+
+* Variable storage
+  + most functional data is stored in the `xx` 2D array for each timestep
+  + each instance of `xx` is stored within the 3D array `xt`
+* Basic Organization
+  + main `comp` subroutine updates `xx` using a temporary array: `c`
+  + `cellpot` calculates and writes the data found in dualfoil5.out
+  + `nucamb` calculates and writes the data for profiles.out
+
+###Table of important locations 
+
+| 5.1 Line(s) | 5.2 Line(s) | Description                                                                                        |
+|:-----------:|:-----------:|----------------------------------------------------------------------------------------------------|
+|  191-316    |  251-368    | Read in input data                                                                                 |
+|  __1379__   | __1361__    | `comp` subroutine; solves main equations and updates `xx` values                                   |
+|    2832     |   2892      | `calca` sub; calculates diffusion in solid particles                                               |
+|    3055     |   3114      | `erfcg` sub; error function compliment                                                             |
+|    3097     |   3156      | `band` sub; solves coupled, linear differential equations                                          |
+|    3165     |   3224      | `matinv` sub; matrix inversion program for `band`                                                  |
+|  __3223__   | __3282__    | `nucamb` sub; calculates and prints detailed profiles                                              |
+|    DNE      |   3361      | `peak` sub; calculates peak power per timestep in discharge                                        |
+|  __3305__   | __3541__    | `cellpot` sub; calculates and prints main output data per timestep                                 |
+|    3526     |   3821      | `sol` sub; calculates solid-phase concentration files                                              |
+|    3613     |   3908      | `mass` sub; calculates mass from densities and volume fraction                                     |
+|    3657     |   3952      | `temperature` sub; recomputes cell temperature                                                     |
+|    3867     |   4167      | `ekin` sub; evaluates Butler-Volmer equations and provides data for pos. and neg. active materials |
+|    4595     |   5231      | `prop` sub; creates a library of electrolyte properties                                            |
+|    4800     |   5834      | `vardc` sub; unclear utility                                                                       |
+|    4970     |   5981      | `band2` sub; unclear purpose distinguishable from `band`                                           |
+|    5034     |   6044      | `matinv2` sub; matrix inversion program for `band2`                                                |
+| 1046-1369   | 1016-1342   | loop for each simulation step                                                                      |
+| 1280-1369   | 1222-1342   | portion of above loop that prepares for new simulation step                                        |
+| 1054-1255   | 1020-1200   | portion of loop that iterates through each timestep                                                |
+|    1093     |   1128      | portion of loop where profiles are called to be generated                                          |
+|    3493     |   3779      | block of code where main output list is printed within `cellpot`                                   |
+
+---
 
 ##Running Successful Simulations
 
@@ -242,6 +280,13 @@ cSP   writing out the restart file
       end do
       end if
 ```
+####After main loop
+
+* 5.1 does not include the peak power optional mode that 5.2 does
+  * As a result, the `peak` subroutine does not exist in 5.1
+
+---
+
 ###Comp Subroutine
 
 ####Code unique to 5.2
