@@ -121,11 +121,11 @@ Note: change is expressed as change from 5.2 to 5.1
 
 ###Input files
 
-* added `restart` boolean 
-* removed `cot1, cot3`, coulumbic capacity
-* removed `rs1, rs2`, density of insertion material
-* removed `lflag` and `lpow` flags
-* `nneg, nprop, npos` lists of reference metals have been altered and rearranged
+* added `restart` boolean to line 1 of 5.1 input
+* removed `cot1, cot3`, coulumbic capacity from lines 44-45 of 5.2 input
+* removed `rs1, rs2`, density of insertion material form lines 47-48 of 5.2 input
+* removed `lflag` and `lpow` flags from lines 62 and 66 of 5.2 input, respectively
+* `nneg, nprop, npos` lists of reference metals have been altered and rearranged (5.1 lines 66-68, 5.2 lines 75-77)
 
 ###Main Code
 
