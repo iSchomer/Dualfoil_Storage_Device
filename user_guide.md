@@ -6,10 +6,9 @@ Note: sections labeled in *italics* are unique to 5.1 code
 Dualfoil reads in all required information from the following two files:
 * dualfoil5.in (named "li-ion.in" for 5.2):
   1. includes all the main data read in for simulation, with a discription beside each variable
-  2. *includes `restart`, the usage of which is described below*
+  2. *includes* `restart`, *the usage of which is described below*
 * li-ion-ebar.in which includes data for activation energies
 
----
 
 ##Output
 
@@ -23,7 +22,6 @@ Dual generates the following output files:
 * *df_caebat.out: for generating CAEBAT output; four columns of unlabeled values*
 * *df_restart.dat and df_sources.dat: used in 5.1 to initialize variables when beginning from a restart*
 
----
 
 ##Running Successful Simulations
 
@@ -31,12 +29,11 @@ Dual generates the following output files:
 * Some variables should not be changed without also changing others
   + Ex: in 5.2 when changing insertion materials,  `cot1` and `cot3` must be manually changed to match that material's property
 * The last line of input contains the specifications for the run, which are highly dependent on each other
-  + the meaning of the first two numbers (`cu(i)` and `tt(i)`) are dependent upon the value of `mc(i)`, as described in the main input file
+  + the meaning of the first two numbers--`cu(i)` and `tt(i)`--are dependent upon the value of `mc(i)`, as described in the main input file
 
-###*Using the `restart` mode*
+###*Using the* `restart` *mode*
 
-Basic idea: When beginning a new simulation, `restart` should be set to False in order to initialize properties  
-  based on the input data. After this run, any additional runs that are a continuation should have `restart` set to True.
+Basic idea: When beginning a new simulation, `restart` should be set to False in order to initialize properties based on the input data. After this run, any additional runs that are a continuation should have `restart` set to True.
 
 1. Restarting at the beginning of a new leg:
   + Keep the last leg that just ran in the input file and include the new leg. Program will only run the new leg
@@ -52,8 +49,7 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 3. Determining which type of restart to use:
   + If changing the type of mode through `mc(i)`, restart from a new leg
   + If changing value of `cu(i)`, restart from a new leg
-  + Changing the value of `tt(i)` suggests restarting from the same leg __unless__ working with cutoff voltages, and the new  
-    desired cutoff voltage would require a shift form charging to discharging, or vice versa
+  + Changing the value of `tt(i)` suggests restarting from the same leg __unless__ working with cutoff voltages, and the new desired cutoff voltage would require a shift form charging to discharging, or vice versa
 
 ---
 
@@ -87,21 +83,21 @@ Note: change is expressed as change from 5.2 to 5.1
 
 ###Input files
 
-1. added `restart` boolean 
-2. removed `cot1, cot3`, coulumbic capacity
-3. removed `rs1, rs2`, density of insertion material
-4. removed `lflag` and `lpow` flags
-5. `nneg, nprop, npos` lists of reference metals have been altered and rearranged
+* added `restart` boolean 
+* removed `cot1, cot3`, coulumbic capacity
+* removed `rs1, rs2`, density of insertion material
+* removed `lflag` and `lpow` flags
+* `nneg, nprop, npos` lists of reference metals have been altered and rearranged
 
 ###Main Code
 
 ####Variables
-1. added `i2div` in `common /n/`
-2. completely altered variables inside `common /pindiv/`
-3. merged 5.2's xbrug variables into a single variable in `common /var/`
-4. added `common /resistances/`
-5. added `newrun` and `restart` logicals
-6. many other minor name changes / functional alterations
+* added `i2div` in `common /n/`
+* completely altered variables inside `common /pindiv/`
+* merged 5.2's xbrug variables into a single variable in `common /var/`
+* added `common /resistances/`
+* added `newrun` and `restart` logicals
+* many other minor name changes / functional alterations
 
 ####Reading in variables
 If a restart is called, certain variables are read in instead of initialized (line 463) (see below):
@@ -198,6 +194,7 @@ _note: only location where file 13 is written to or read from; unclear purpose_
 ```
 
 + In  process marked 610 within timestep loop, 5.2 calls `comp` 4 times whereas 5.1 calls it only once
+
 + 5.1 includes code (line 1220) at end of loop that prepares for a possible restart in next simulation (shown below) 
 
 ```fortran
@@ -245,4 +242,67 @@ cSP   writing out the restart file
       end do
       end if
 ```
+###Comp Subroutine
 
+####Code unique to 5.2
+
+before the main loop:
+
+```fortran
+c     The exbrug exponent is being set independently for the separator and
+c     positive and negative electrodes as shown in the following three lines...
+
+      exbrug1=1.5d0 !EX for the negative active material.
+      exbrug2=1.5d0 !EX for the separator material.
+      exbrug3=1.5d0 !EX for the positive active material.
+```
+
+...and...
+
+```fortran
+      if(time.eq.0.d0) then
+      totLiold=0.d0
+      do j=1,nj
+      fh=h3*ep3
+      if(j.le.n1+n2) fh=h2*ep2
+      if(j.le.n1+1) fh=h1*ep1
+      if(j.eq.1) fh=0.5*h1*ep1
+      if(j.eq.n1+1) fh=0.5d0*(h1*ep1+h2*ep2)
+      if(j.eq.n1+n2) fh=0.5d0*(h3*ep3+h2*ep2)
+      if(j.eq.nj) fh=0.5d0*h3*ep3
+      totLiold=totLiold + fh*c(1,j)
+      enddo
+      print *, totLiold
+      write (3,*) 'totLiold ', totLiold
+	endif
+      totLio=0.d0
+      do j=1,nj
+      fh=h3*ep3
+      if(j.le.n1+n2) fh=h2*ep2
+      if(j.le.n1+1) fh=h1*ep1
+      if(j.eq.1) fh=0.5*h1*ep1
+      if(j.eq.n1+1) fh=0.5d0*(h1*ep1+h2*ep2)
+      if(j.eq.n1+n2) fh=0.5d0*(h3*ep3+h2*ep2)
+      if(j.eq.nj) fh=0.5d0*h3*ep3
+      totLio=totLio + fh*c(1,j)
+      enddo
+	print *, totLiold,totLio
+```
+
+####Code unique to 5.1
+
+inside of main subroutine loop:
+
+```fortran
+	do mpa=1,npa
+	g(2+mpa)=xt(2+mpa,j,kk-1+kadd)-xx(2+mpa,j) !fix solid concentrations
+	b(2+mpa,2+mpa)=1.d0
+	enddo !mpa
+```
+
+####Solver Equations 
+
+These are the 6 (sometimes 7) equations that the program solves in order to initialize and update its functional variables
+
+* In equation dealing with material balance in solid insertion metal, 5.1 allows for multiple sizes of variable solid-phase diffusion coefficient (5.2 allows only one)
+* 5.2 Equation 3 (Butler-volmer kinetics) has large blocks of code for pore-wall fluxes that 5.1 lacks
