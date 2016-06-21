@@ -100,7 +100,7 @@ Note: change is expressed as change from 5.2 to 5.1
 * many other minor name changes / functional alterations
 
 ####Reading in variables
-If a restart is called, certain variables are read in instead of initialized (line 463) (see below):
+If a restart is called in 5.1, certain variables are read in instead of initialized (line 463) (see below):
 
 ```fortran
       if(restart) then 
@@ -161,8 +161,8 @@ and line 942:
       end if
 ```
 
-lastly line 1010:
-_note: only location where file 13 is written to or read from; unclear purpose_
+lastly line 1010:  
+Note: only location where file 13 is written to or read from; unclear purpose
 
 ```fortran
       icheck = 0 ! check that all the data is read in correctly for a restart
@@ -246,18 +246,7 @@ cSP   writing out the restart file
 
 ####Code unique to 5.2
 
-before the main loop:
-
-```fortran
-c     The exbrug exponent is being set independently for the separator and
-c     positive and negative electrodes as shown in the following three lines...
-
-      exbrug1=1.5d0 !EX for the negative active material.
-      exbrug2=1.5d0 !EX for the separator material.
-      exbrug3=1.5d0 !EX for the positive active material.
-```
-
-...and...
+before the main subroutine loop:
 
 ```fortran
       if(time.eq.0.d0) then
