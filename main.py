@@ -11,12 +11,26 @@ def autoRst():
     choice = 1
 
     #keeping track of each step
+    filePath = ''
+    default = True
     first = True
     legs = []
     time, n_util, p_util, potential, uocp, curr, temp, heatgen = [], [], [], [], [], [], [], []
+    
+    #find path to files
+    response = str(input('Are dualfoil files in this directory (Y or N)?  '))
+    response = response.upper()
+    if response == 'N':
+        filePath = str(input('\nPlease provide the path to these files:  '))
+        if not filePath.endswith('/'):
+            filePath += '/'
+        default = False
 
     #copy input data so it can be reverted back after simulation
-    subprocess.call('cd /Users/ips/dualfoil/ && cp dualfoil5.in inputCopy.in', shell=True)
+    if default == True:
+        subprocess.call('cp dualfoil5.in inputCopy.in', shell=True)
+    else:
+        subprocess.call('cd %s && cp dualfoil5.in inputCopy.in' %(filePath), shell=True)
 
     #operational loop
     while choice != 2:
@@ -34,6 +48,7 @@ def autoRst():
                     try:
                         cmd = ''
                         cmd = str(input('\nEnter new command line to be executed.\nFormat (one space separator): cu(i) tt(i) mc(i) vcutLow vcutHigh\n'))
+                        print(cmd)
                         line = cmd + "  !" + line + '\n'
                         cmd = cmd.split(' ')
                         cu, tt, mc, vcutL, vcutH = float(cmd[0]), float(cmd[1]), int(cmd[2]), float(cmd[3]), float(cmd[4])
@@ -61,10 +76,13 @@ def autoRst():
         
         if choice == 1:
             #run dualfoil
-            subprocess.call('cd /Users/ips/dualfoil/ && ./dualfoil', shell=True)
+            if default == True:
+                subprocess.call('./dualfoil', shell=True)
+            else:
+                subprocess.call('cd %s && ./dualfoil' %(filePath), shell=True)
 
             #track the main output
-            a, b, c, d, e, f, g, h = io_manip.extract_main_output('/Users/ips/dualfoil/dualfoil5.out')
+            a, b, c, d, e, f, g, h = io_manip.extract_main_output('%sdualfoil5.out' %(filePath))
             time +=a 
             n_util += b
             p_util += c
@@ -79,8 +97,12 @@ def autoRst():
     #gather final output; write to an output file
     output = [time, n_util, p_util, potential, uocp, curr, temp, heatgen]
     print(len(output))
-    subprocess.call('date > /Users/ips/dualfoil/combinedOutput.out', shell=True)
-    with open('/Users/ips/dualfoil/combinedOutput.out', 'a') as outFile:
+    if default:
+        subprocess.call('date > combinedOutput.out', shell=True)
+    else:
+        subprocess.call('date > %scombinedOutput.out' %(filePath), shell=True)
+        
+    with open('%scombinedOutput.out' %(filePath), 'a') as outFile:
         outFile.write('\nMain Output data\n\n')
         outFile.write('     Time   N_util   P_util Potential    Uocp     Curr    Temp    Heatgen\n')
         outFile.write('     (min)    x         y      (v)        (v)    (A/m2)    (C)     (W/m2)\n\n')
@@ -92,11 +114,18 @@ def autoRst():
                     outFile.write('\n')
 
     #restore input; write legs to a file
-    subprocess.call('cd /Users/ips/dualfoil/ && mv inputCopy.in dualfoil5.in', shell=True)
-    subprocess.call('date > /Users/ips/dualfoil/legs.dat', shell=True)
-    with open('/Users/ips/dualfoil/legs.dat', 'a') as legsFile:
-        for string in legs:
-            legsFile.write(string)
-
+    if default:
+        subprocess.call('mv inputCopy.in dualfoil5.in', shell=True)
+        subprocess.call('date > legs.dat', shell=True)
+        with open('legs.dat', 'a') as legsFile:
+            for string in legs:
+                legsFile.write(string)
+    else:
+        subprocess.call('cd %s && mv inputCopy.in dualfoil5.in' %(filePath), shell=True)
+        subprocess.call('date > %slegs.dat' %(filePath), shell=True)
+        with open('%slegs.dat' %(filePath), 'a') as legsFile:
+            for string in legs:
+                legsFile.write(string)
+            
 
 autoRst()
