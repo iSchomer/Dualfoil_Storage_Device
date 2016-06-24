@@ -57,6 +57,7 @@ Dual generates the following output files:
 | 1280-1369   | 1222-1342   | portion of above loop that prepares for new simulation step                                        |
 | 1054-1255   | 1020-1200   | portion of loop that iterates through each timestep                                                |
 |    1093     |   1128      | portion of loop where profiles are called to be generated                                          |
+|  __1163__   | __1161__    | can comment out this block for a constant timestep                                                 |
 |    3493     |   3779      | block of code where main output list is printed within `cellpot`                                   |
 
 ---
@@ -75,13 +76,14 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 
 1. Restarting at the beginning of a new leg:
   + Keep the last leg that just ran in the input file and include the new leg. Program will only run the new leg
-  + When running in terms of time, change the previous `tt(i)` from the duration of that leg to the last recorded timestep
+  + When running in terms of time, change the previous `tt(i)` from the *duration* of that leg to the *last recorded timestep*
+  + Set the new `tt(i)` to the duration in minutes of the new leg
     * Note: When running a multi-leg straight run, each `tt(i)` represents duration for that leg, not the desired endtime
   + Restarting from a cutoff voltage instead of time will slightly throw off the timesteps relative to a multi-leg straight run
 
 2. Restarting within a leg:
   + Include only the current leg that will be continued, updating `tt(i)` to the new desired cutoff/endtime.
-  + When running in terms of time, `tt(i)` will represent desired endtime, not additional length of simulation runtime
+  + When running in terms of time, `tt(i)` in this case will represent desired endtime, not additional length of simulation runtime
   + When runing in terms of cutoff voltage, set `tt(i)` to the new desired cuttoff voltage 
 
 3. Determining which type of restart to use:
