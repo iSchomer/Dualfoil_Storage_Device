@@ -74,23 +74,12 @@ Dual generates the following output files:
 
 Basic idea: When beginning a new simulation, `restart` should be set to False in order to initialize properties based on the input data. After this run, any additional runs that are a continuation should have `restart` set to True.
 
-1. Restarting at the beginning of a new leg:
-  + Keep the last leg that just ran in the input file and include the new leg. Program will only run the new leg
-  + When running in terms of time, change the previous `tt(i)` from the *duration* of that leg to the *last recorded timestep*
-  + Set the new `tt(i)` to the duration in minutes of the new leg
-    * Note: When running a multi-leg straight run, each `tt(i)` represents duration for that leg, not the desired endtime
-  + Restarting from a cutoff voltage instead of time will slightly throw off the timesteps relative to a multi-leg straight run
-
-2. Restarting within a leg:
-  + Include only the current leg that will be continued, updating `tt(i)` to the new desired cutoff/endtime.
-  + When running in terms of time, `tt(i)` in this case will represent desired endtime, not additional length of simulation runtime
++ Include only the current leg that will be started / continued, 
++ For updating `tt(i)`:
+  + When running in terms of time, `tt(i)` will represent desired endtime, not additional length of simulation runtime
   + When runing in terms of cutoff voltage, set `tt(i)` to the new desired cuttoff voltage 
-
-3. Determining which type of restart to use:
-  + If changing the type of mode through `mc(i)`, restart from a new leg
-  + If changing value of `cu(i)`, restart from a new leg
-  + Changing the value of `tt(i)` suggests restarting from the same leg __unless__ working with cutoff voltages, and the new desired cutoff voltage would require a shift form charging to discharging, or vice versa
-
+  + If an input file has a two or more legs, `tt(i)` for the second leg and beyond will represent additional length of runtim, not endtime
++ After a simulation, the total runtime can be found as the second number on the first line of `df_restart.dat`  
 ---
 
 ##Problems with running
