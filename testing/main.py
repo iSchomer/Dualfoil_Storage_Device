@@ -119,6 +119,5 @@ def autoRst():
         with open('%slegs.dat' %(filePath), 'a') as legsFile:
             for string in legs:
                 legsFile.write(string)
-                
 
 autoRst()
