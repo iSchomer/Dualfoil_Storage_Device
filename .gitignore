@@ -1,5 +1,10 @@
 *.out
 DualFoil_Charge.ipynb
 DualFoil_Discharge.ipynb
+3DInteractive.ipynb
+DF_Comparison.ipynb
 
 .gitignore
+.ipynb_checkpoints/
+__pycache__/
+
