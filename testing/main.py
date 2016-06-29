@@ -1,12 +1,7 @@
-
-# coding: utf-8
-
-# In[2]:
-
 def autoRst():
 
     import subprocess
-    import io_manip
+    import df_manip
 
     choice = 1
 
@@ -59,12 +54,10 @@ def autoRst():
                         print('\nNot enough variables detected. Please try again')
 
                 #update input file and steplist
-                if first == True:
-                    io_manip.first_leg(comment, cu, tt, mc, vcutL, vcutH)
-                    first = False
-                else:
-                    io_manip.add_new_leg(comment, cu, tt, mc, vcutL, vcutH)
-                    
+                io_manip.add_new_leg(comment, cu, tt, mc, vcutL, vcutH, restart = first)
+                #next will be restart if we just had our first leg
+                if first:
+                    first = False   
                 legs.append(line)
                 break
             if choice == 2:
@@ -126,6 +119,6 @@ def autoRst():
         with open('%slegs.dat' %(filePath), 'a') as legsFile:
             for string in legs:
                 legsFile.write(string)
-            
+                
 
 autoRst()

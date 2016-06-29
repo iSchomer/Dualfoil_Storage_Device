@@ -5,21 +5,23 @@
 
 import unittest
 import subprocess
-import io_manip
+import df_manip
 
 class testOutputs(unittest.TestCase):
     
     #NOTE: will have to change path directories
     
-    def setUp(self):
+    def setUp(self, filePath):
+        if not filePath.endswith('/'):
+            filePath += '/'
         #do straight test first and gather output
-        subprocess.call('cd /Users/ips/dualfoil/ && ./dualfoil', shell=True)
-        t1, n1, p1, v1, u1, c1, tm1, h1 = io_manip.extract_main_output('/Users/ips/dualfoil/dualfoil5.out')
+        subprocess.call('cd %s && ./dualfoil' %(filePath), shell=True)
+        t1, n1, p1, v1, u1, c1, tm1, h1 = io_manip.extract_main_output('%sdualfoil5.out' %(filePath))
         self.ar1 = [t1, n1, p1, v1, u1, c1, tm1, h1]
         
         #then do restarted run, using input file
         subprocess.call('python main.py < sampleTest.txt', shell=True)
-        t2, n2, p2, v2, u2, c2, tm2, h2 = io_manip.extract_main_output('/Users/ips/dualfoil/combinedOutput.out')
+        t2, n2, p2, v2, u2, c2, tm2, h2 = io_manip.extract_main_output('%scombinedOutput.out' %(filePath))
         self.ar2 = [t2, n2, p2, v2, u2, c2, tm2, h2]
            
     def test_values(self):
