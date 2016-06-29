@@ -35,7 +35,7 @@ def first_leg(title, cu, tt, mc, vcutL=0.0001, vcutH=5.0):
     with open('/Users/ips/dualfoil/dualfoil5.in', 'w') as file:
         file.write(newInput)
 
-def add_new_leg(title, cu, tt, mc, vcutL=0.0001, vcutH=5.0):
+def add_new_leg(title, cu, tt, mc, vcutL=0.0001, vcutH=5.0, restart = True):
 
     """
     Appends a new leg to dualfoil's input file, adjusting the restart parameter if needed.
@@ -60,65 +60,60 @@ def add_new_leg(title, cu, tt, mc, vcutL=0.0001, vcutH=5.0):
         Low Voltage cutoff point
     vcutH : float
         High Voltage cutoff point
+    restart : bool
+        Indicates if simulation will begin from restart data
     """
 
     newInput = ''
     newLeg = ''
-    tracker = False
     modified = False
-    firstRst = False
     with open('/Users/ips/dualfoil/dualfoil5.in', 'r+') as file:
-    line = file.readline()
-    while line != '':
-        #make sure restart is set to true
-        if line.find('.false.') != -1:
-            firstRst = True
-            line = line.replace('.false.', '.true.')
+        
+        line = file.readline()
+        while line != '':
+            if (restart == True):
+                #make sure restart is set to true
+                if line.find('.false.') != -1:
+                    firstRst = True
+                    line = line.replace('.false.', '.true.')
+            else:
+                #make sure restart is set to true
+                if line.find('.true.') != -1:
+                    firstRst = True
+                    line = line.replace('.true.', '.false.')
 
-
-        if (tracker == True):
-            #if we have already made all required modifications, add new leg
-            if (modified == True):
-                newLeg = str(cu) + ' ' + str(tt) + ' ' + str(mc) + ' ' + str(vcutL) + ' ' + str(vcutH) + ' !' + title + '\n'
-                newInput += newLeg
-                tracker = False 
-            else: 
-                #Make required modifications; should be left with a reference leg and the new leg.
-
+            #find line before the one we need; set tracker for next loopthru
+            if line.find('lcurs') != -1 and modified == False:
+                tmp = line.lstrip().split()
+                #also make sure lcurs is 1
+                if int(tmp[0]) != 1:
+                    line = line.replace(str(tmp[0]), '1', 1)
+                newInput += line
                 #Get the total simulation time; we might need it
                 rstFile = open('/Users/ips/dualfoil/df_restart.dat', 'r')
                 rstLine = rstFile.readline()
                 rstLine = rstLine.split('        ') #two values separated by 8 spaces
                 totalT = float(rstLine[1]) / 60.0    #convert to minutes
                 rstFile.close() 
-
-                #if there are 2 legs from a previous restart, only keep the last one
-                if firstRst == False: 
+                #skip over all other command lines
+                while line != '\n':
                     line = file.readline()
-                    #^this leg^ will become the reference leg for the next simulation
+                #if next leg depends on time, we need the total time
+                if (mc == 2) or (mc == -1):
+                    #depends on cutoff potential; don't alter tt(i)
+                    line = str(cu) + ' ' + str(tt) + ' ' + str(mc) + ' ' + str(self.vcutL) + ' ' + str(self.vcutH) + ' !' + title + '\n\n'
+                else: 
+                    if restart == True:
+                        #depends on time AND we are from restart. need total
+                        totT = self.get_total_time()
+                        tt += totT
+                    line = str(cu) + ' ' + str(tt) + ' ' + str(mc) + ' ' + str(self.vcutL) + ' ' + str(self.vcutH) + ' !' + title + '\n\n'
+                #don't do this again even if 'lcurs' is in file again
+                modified = True
 
-                    #modify tt(i) of most recent leg if it is terms of time
-                    tmp = line.split(' ')
-
-                    #check mc(i): did most recent leg depended on time?
-                    if float(tmp[2]) == 1 or float(tmp[2]) == 0:
-                        #replace old tt(i) with total run time so far
-                        oldTT = float(tmp[1])
-                        line = line.replace(str(oldTT), str(totalT))
-
-                        #mark that we have completed tasks
-                        modified = True
-
-        #find line before the one we need; set tracker for next loopthru
-        if line.find('lcurs') != -1 and modified == False:
-            #if first restart, must change lcurs to 2 steps
-            if firstRst == True:
-                line = line.replace('1', '2', 1)
-                tracker = True
-
-        #keep up the new file and read next line
-        newInput += line  
-        line = file.readline()
+            #keep up the new file and read next line
+            newInput += line  
+            line = file.readline()
 
     with open('/Users/ips/dualfoil/dualfoil5.in', 'w') as file:
         file.write(newInput)
