@@ -204,9 +204,9 @@ def extract_profiles(file):
                 if profile != []:
                     profile_list.append(profile)
                     profile = []
-                    continue
-                # print(line)
-                profile.append(line)
+                continue
+            # print(line)
+            profile.append(line)
 
     # list of appropriate variable lists for each time chunk
     distance_list = []
@@ -215,25 +215,26 @@ def extract_profiles(file):
     liquid_potential_list = []
     solid_potential_list = []
     liquid_cur_list = []
+    j_main_list = []
     j_side1_list = []
     j_side2_list = []
     j_side3_list = []
     time_list = []
 
-    # extract numeric data from each chunk into appropriate lists
-    # extract columns
-    distance = []
-    elec_conc = []
-    sol_surf_conc = []
-    liquid_potential = []
-    liquid_cur = []
-    j_main = []
-    j_side1 = []
-    j_side2 = []
-    j_side3 = []
-
     # add each row's data into appropriate list
     for profile in profile_list:
+        # extract columns
+        distance = []
+        elec_conc = []
+        sol_surf_conc = []
+        liquid_potential = []
+        solid_potential = []
+        liquid_cur = []
+        j_main = []
+        j_side1 = []
+        j_side2 = []
+        j_side3 = []
+
         for row in profile[3:]:
             tmp = row.split(',')
             distance.append(float(tmp[0]))
@@ -247,22 +248,22 @@ def extract_profiles(file):
             j_side2.append(float(tmp[8]))
             j_side3.append(float(tmp[9]))
 
-            # add each data list to its corresponding vector
-            distance_list.append(distance)
-            elec_conc_list.append(elec_conc)
-            sol_surf_conc_list.append(sol_surf_conc)
-            liquid_potential_list.append(liquid_potential)
-            solid_potential_list.append(solid_potential)
-            liquid_cur_list.append(liquid_cur)
-            j_main_list.append(j_main)
-            j_side1_list.append(j_side1)
-            j_side2_list.append(j_side2)
-            j_side3_list.append(j_side3)
+        # add each data list to its corresponding vector
+        distance_list.append(distance)
+        elec_conc_list.append(elec_conc)
+        sol_surf_conc_list.append(sol_surf_conc)
+        liquid_potential_list.append(liquid_potential)
+        solid_potential_list.append(solid_potential)
+        liquid_cur_list.append(liquid_cur)
+        j_main_list.append(j_main)
+        j_side1_list.append(j_side1)
+        j_side2_list.append(j_side2)
+        j_side3_list.append(j_side3)
 
-            # extract time step and add to time list
-            tmp = profile[2]
-            time = float(tmp.lstrip('t = ').split(' ')[0])
-            time_list.append(time)
+        # extract time step and add to time list
+        tmp = profile[2]
+        time = float(tmp.lstrip('t = ').split(' ')[0])
+        time_list.append(time)
 
     # return data in order it appears
     return (time_list, distance_list, elec_conc_list,
