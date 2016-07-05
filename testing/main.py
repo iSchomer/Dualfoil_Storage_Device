@@ -52,9 +52,9 @@ def autoRst():
                 while True:
                     try:
                         cmd = ''
-                        cmd = str(input('\nEnter new command line to be
-                                        executed.\nFormat (one space
-                                        separator): cu(i) tt(i) mc(i)
+                        cmd = str(input('\nEnter new command line to be\
+                                        executed.\nFormat (one space\
+                                        separator): cu(i) tt(i) mc(i)\
                                         vcutLow vcutHigh\n'))
                         print(cmd)
                         line = cmd + "  !" + line + '\n'
@@ -68,12 +68,12 @@ def autoRst():
                     except ValueError:
                         print('\nImproper command format. Please try again')
                     except IndexError:
-                        print('\nNot enough variables detected.
+                        print('\nNot enough variables detected.\
                               Please try again')
 
                 # update input file and steplist
-                io_manip.add_new_leg(comment, cu, tt, mc, vcutL,
-                                     vcutH, restart=first)
+                df_manip.add_new_leg(cu, tt, mc, vcutL, vcutH, path=filePath,
+                                     description=comment, restart=first)
                 # next will be restart if we just had our first leg
                 if first:
                     first = False
@@ -93,8 +93,8 @@ def autoRst():
                 subprocess.call('cd %s && ./dualfoil' % filePath, shell=True)
 
             # track the main output
-            (a, b, c, d, e, f, g, h
-             =io_manip.extract_main_output('%sdualfoil5.out' % filePath))
+            (a, b, c, d, e, f, g,
+             h) = df_manip.extract_main_output(path=filePath)
             time += a
             n_util += b
             p_util += c
@@ -114,10 +114,8 @@ def autoRst():
 
     with open('%scombinedOutput.out' % filePath, 'a') as outFile:
         outFile.write('\nMain Output data\n\n')
-        outFile.write('     Time   N_util   P_util
-                      Potential    Uocp     Curr    Temp    Heatgen\n')
-        outFile.write('     (min)    x         y      (v)
-                      (v)    (A/m2)    (C)     (W/m2)\n\n')
+        outFile.write('     Time     N_util   P_util   Potential   Uocp       Curr      Temp    Heatgen\n')
+        outFile.write('     (min)      x         y        (v)      (v)       (A/m2)      (C)     (W/m2)\n\n')
         for i in range(len(time)):
             for j in range(len(output)):
                 outFile.write(str(output[j][i]).rjust(9))
@@ -133,8 +131,7 @@ def autoRst():
             for string in legs:
                 legsFile.write(string)
     else:
-        subprocess.call('cd %s && mv inputCopy.in
-                        dualfoil5.in' % filePath, shell=True)
+        subprocess.call('cd %s && mv inputCopy.in dualfoil5.in' % filePath, shell=True)
         subprocess.call('date > %slegs.dat' % filePath, shell=True)
         with open('%slegs.dat' % filePath, 'a') as legsFile:
             for string in legs:
