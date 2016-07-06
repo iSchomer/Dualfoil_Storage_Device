@@ -1,7 +1,6 @@
 # INPUT
 
-
-def add_new_leg(cu, tt, mc, vcutL=0.0001, vcutH=5.0,
+def add_new_leg(cu, tt, mc, vcutL=0.0001, vcutH=12.0,
                 description='', path='', restart=True):
 
     """
@@ -45,12 +44,10 @@ def add_new_leg(cu, tt, mc, vcutL=0.0001, vcutH=5.0,
             if restart:
                 # make sure restart is set to true
                 if line.find('.false.') != -1:
-                    firstRst = True
                     line = line.replace('.false.', '.true.')
             else:
                 # make sure restart is set to true
                 if line.find('.true.') != -1:
-                    firstRst = True
                     line = line.replace('.true.', '.false.')
 
             # find line before the one we need; set tracker for next loopthru
@@ -60,12 +57,7 @@ def add_new_leg(cu, tt, mc, vcutL=0.0001, vcutH=5.0,
                 if int(tmp[0]) != 1:
                     line = line.replace(str(tmp[0]), '1', 1)
                 newInput += line
-                # Get the total simulation time; we might need it
-                rstFile = open('/Users/ips/dualfoil/df_restart.dat', 'r')
-                rstLine = rstFile.readline()
-                rstLine = rstLine.split()
-                totalT = float(rstLine[1]) / 60.0  # convert to minutes
-                rstFile.close()
+
                 # skip over all other command lines
                 while line != '\n':
                     line = file.readline()
@@ -78,7 +70,7 @@ def add_new_leg(cu, tt, mc, vcutL=0.0001, vcutH=5.0,
                 else:
                     if restart:
                         # depends on time AND we are from restart. need total
-                        totT = get_total_time()
+                        totT = get_total_time(path)
                         tt += totT
                     line = (str(cu) + ' ' + str(tt) + ' ' + str(mc) +
                             ' ' + str(vcutL) + ' ' +
@@ -179,7 +171,7 @@ def extract_main_output(file='dualfoil5.out', path=''):
 
             if (tmp[7] == ' ******'):
                 tmp[7] = '0.00'
-                heatgen.append(float(tmp[7]))
+            heatgen.append(float(tmp[7]))
 
     # return data in order it appears
     return time, n_util, p_util, potential, uocp, curr, temp, heatgen
