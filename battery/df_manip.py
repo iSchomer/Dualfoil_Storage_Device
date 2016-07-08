@@ -1,3 +1,6 @@
+__all__ = ['add_new_leg', 'extract_main_output',
+           'extract_profiles', 'OutputManager']
+
 import subprocess
 
 """
@@ -105,6 +108,7 @@ def get_total_time(path=''):
     tmp = tmp.lstrip().split()
     # get timestep in minutes
     ts = float(tmp[1]) / 60
+    rstFile.close()
     return ts
         
 # OUTPUT:
@@ -424,7 +428,20 @@ class OutputManager:
         self.jside1_prof.clear()
         self.jside2_prof.clear()
         self.jside3_prof.clear()
+
+    def set_filepath(self, path):
+        """
+        assigns the parameter to `filePath`
         
+        Parameters
+        ----------
+        path : str
+            Full or relative path to dualfoil files
+        """
+        if not path.endswith('/'):
+            path += '/'
+        self.filePath = path
+
     def get_voltage(self):
         """
         Get the voltage, or return -1 if there is no output
@@ -482,7 +499,7 @@ class OutputManager:
         self.jside2_prof += x[9]
         self.jside3_prof += x[10]
 
-    def write_main_output():
+    def write_main_output(self):
         """
         Organizational tool to display the main output from dualfoil 
         into a readable file: combinedOutput.out

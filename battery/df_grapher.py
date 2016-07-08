@@ -1,3 +1,5 @@
+__all__ = ['graph_main_output_3D', 'graph_profiles_3D']
+
 from matplotlib import cm
 from mpl_toolkits.mplot3d import axes3d
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
