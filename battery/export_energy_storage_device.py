@@ -1,3 +1,5 @@
+__all__ = ['Dualfoil']
+
 import subprocess
 from pycap import EnergyStorageDevice
 import df_manip
@@ -81,6 +83,7 @@ class Dualfoil(EnergyStorageDevice):
         if not path.endswith('/'):
             path += '/'
         self.filePath = path
+        self.outbot.set_filepath(self.filePath)
 
     def get_voltage(self):
         v = self.outbot.get_voltage()
@@ -110,11 +113,12 @@ class Dualfoil(EnergyStorageDevice):
         float
             the total time in minutes
         """
-        rstFile = open('%s:' % self.filePath, 'r')
+        rstFile = open('%sdf_restart.dat' % self.filePath, 'r')
         tmp = rstFile.readline()
         tmp = tmp.lstrip().split()
         # get timestep in minutes
         ts = float(tmp[1]) / 60
+        rstFile.close()
         return ts
 
     def get_time_step(self):
@@ -131,6 +135,7 @@ class Dualfoil(EnergyStorageDevice):
         tmp = tmp.lstrip().split()
         # get timestep in minutes
         ts = float(tmp[0]) / 60
+        rstFile.close()
         return ts
 
     # main sim functions------------------------------------------------
@@ -178,6 +183,10 @@ class Dualfoil(EnergyStorageDevice):
         cutoff : float
             the cutoff voltage in amperes
         """
+        # pycap currents: - for discharge, + for charge
+        # dualfoil currents: + for discharge, - for charge
+        current = -current
+
         df_manip.add_new_leg(current, cutoff, 2, "constant current",
                              path=self.filePath, restart=self.restart)
         self.run()
@@ -198,23 +207,26 @@ class Dualfoil(EnergyStorageDevice):
         divisor : int, optional
             the number of substeps to be taken to create the current increase
         """
-        time_step = time_step / 60
-        if not self.restart:
-            tmpcurr = 0
-        else:
-            tmpcurr = get_current()
+        # pycap currents: - for discharge, + for charge
+        # dualfoil currents: + for discharge, - for charge
+        current = -current
 
-        ts = time_step / divisor
+        time_step = time_step / 60
+        if self.restart:
+            linCurr = self.get_current()
+        else:
+            linCurr = 0.0
+        ts = time_step / (divisor+1)
         ttot = ts
-        change = (current-tmpcurr) / divisor
-        tmpcurr = change
+        change = (current-linCurr) / divisor
+        
 
         while ttot <= time_step:
-            df_manip.add_new_leg(tmpcurr, ts, 1, "linear current",
+            df_manip.add_new_leg(linCurr, ts, 1, "linear current",
                                  path=self.filePath, restart=self.restart)
             # get next timestep values
             ttot += ts
-            tmpcurr += change
+            linCurr += change
             self.run()
             self.outbot.update_output()
 
@@ -234,22 +246,17 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the voltage increase
         """
         time_step = time_step / 60
-        if not self.restart:
-            tmpvolt = 0
-        else:
-            tmpvolt = get_current()
-
-        ts = time_step / divisor
+        linearV = self.get_voltage()
+        ts = time_step / (divisor+1)
         tott = ts
-        change = (voltage-tmpvolt) / divisor
-        tmpvolt = change
+        change = (voltage-linearV) / divisor
 
         while tott <= time_step:
-            df_manip.add_new_leg(tmpvolt, ts, 0, "linear voltage",
+            df_manip.add_new_leg(linearV, ts, 0, "linear voltage",
                                  path=self.filePath, restart=self.restart)
             # get next timestep values
             tott += ts
-            tmpvolt += change
+            linearV += change
             self.run()
             self.outbot.update_output()
 
@@ -273,18 +280,17 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the power increase
         """
         time_step = time_step / 60
-        tmppower = start_point
-        ts = time_step / divisor
+        ts = time_step / (divisor+1)
         tott = ts
         change = (power-start_point) / divisor
-        tmppower = change
+        linPow = start_point
 
-        while ts <= time_step:
-            df_manip.add_new_leg(tmppower, ts, 1, "linear power",
+        while tott <= time_step:
+            df_manip.add_new_leg(linPow, ts, -2, "linear power",
                                  path=self.filePath, restart=self.restart)
             # get next timestep values
             tott += ts
-            tmppower += change
+            linPow += change
             self.run()
             self.outbot.update_output()
 
@@ -306,17 +312,16 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the current increase
         """
         time_step = time_step / 60
-        tmpload = start_point
-        ts = time_step / divisor
+        ts = time_step / (divisor+1)
         tott = ts
         change = (load-start_point) / divisor
-        tmpload = change
+        linLoad = start_point
 
-        while ts <= time_step:
-            df_manip.add_new_leg(tmpload, ts, 1, "linear load",
+        while tott <= time_step:
+            df_manip.add_new_leg(linLoad, ts, -3, "linear load",
                                  path=self.filePath, restart=self.restart)
             # get next timestep values
             tott += ts
-            tmpload += change
+            linLoad += change
             self.run()
             self.outbot.update_output()
