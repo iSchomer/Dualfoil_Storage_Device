@@ -2,6 +2,7 @@ import sys
 sys.path.append('/notebooks')
 from battery import *
 from energy_storage_device import Dualfoil
+from pycap import PropertyTree, Charge
 
 import unittest
 
@@ -18,7 +19,7 @@ class DualfoilTestCase(unittest.TestCase):
         dt = 1.0  # seconds
         I = 5.0   # current
         df.evolve_one_time_step_constant_current(dt, I)
-        self.assertAlmostEqual(abs(df.get_current()), abs(I))
+        self.assertAlmostEqual(df.get_current(), I*-1)
         self.assertAlmostEqual(df.get_total_time(), dt / 60)
         df.reset()
         V = 4.5  # voltage
@@ -54,7 +55,7 @@ class DualfoilTestCase(unittest.TestCase):
         Cfin = -10.0  # final current (charge)
         df.evolve_one_time_step_linear_current(dt, Cfin, div)
         self.assertAlmostEqual(df.get_total_time(), dt / 60)
-        self.assertAlmostEqual(abs(df.get_current()), abs(Cfin))
+        self.assertAlmostEqual(df.get_current(), Cfin*-1)
         df.reset()
         Vfin = 4.3  # final current (lower than initial)
         df.evolve_one_time_step_linear_voltage(dt, Vfin, div)
@@ -77,7 +78,7 @@ class DualfoilTestCase(unittest.TestCase):
         self.assertAlmostEqual(df.get_total_time(), dt / 60)
         self.assertAlmostEqual(load, Lfin, delta=0.5)
         df.reset()
-
+        
 
 if __name__ == '__main__':
     unittest.main()
