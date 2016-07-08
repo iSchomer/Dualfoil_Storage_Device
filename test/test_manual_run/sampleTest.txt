@@ -1,0 +1,11 @@
+N
+/Users/ips/dualfoil/
+Charge for 30
+-10.0 30.0 1 0.0001 5.0
+1
+Discharge for thirty min
+25.0 30.0 1 0.0001 5.0
+1
+Charge back to 4.5
+-20.0 4.5 2 0.0001 5.0
+2
