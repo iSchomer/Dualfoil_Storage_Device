@@ -8,10 +8,10 @@ import unittest
 path = '/notebooks/docker'
 
 class DualfoilTestCase(unittest.TestCase):
-    def test_constant_evolve_functions(self):
+    def test_consistency_constant_evolve_functions(self):
         df = Dualfoil()
         df.set_filepath(path)
-        self.assertTrue(df.filePath == '/notebooks/docker/')
+        self.assertTrue(df.filePath == '/notebooks/docker')
 
         # determine that what we want is what we get
         # constant evolve functions
@@ -41,7 +41,7 @@ class DualfoilTestCase(unittest.TestCase):
                                delta=1e-4)
         df.reset()
 
-    def test_linear_evolve_functions(self):
+    def test_consistency_linear_evolve_functions(self):
         df = Dualfoil(Path=path)
 
         # affirm total time and final dependent value
