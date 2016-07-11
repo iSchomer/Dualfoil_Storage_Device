@@ -79,6 +79,52 @@ class DualfoilTestCase(unittest.TestCase):
         self.assertAlmostEqual(load, Lfin, delta=0.5)
         df.reset()
         
+    def test_pycap_simulation(self):
+        # TODO 
+        D1 = Dualfoil(Path=path)  # will use pycap
+        D2 = Dualfoil(Path=path)  # manual runs
+        self.assertFalse(D1.restart)
+        self.assertFalse(D2.restart)
+
+        # testing a charge-to-hold-const-voltage
+        # manual 
+        # use df_manip to set the input file
+        c = -10.0  # constant current
+        df_manip.add_new_leg(c, 5.0, 1, path=path,
+                             restart=False)
+        D1.run()
+        D1.outbot.update_output()
+        v = 4.54  # constant voltage
+        df_manip.add_new_leg(v, 5.0, 0, path=path,
+                             restart=True)
+        D1.run()
+        D1.outbot.update_output()
+
+        # auto
+        # build a ptree input
+        ptree = PropertyTree()
+        ptree.put_double('time_step', 300.0)  # 5 minutes
+        ptree.put_string('charge_mode', 'constant_current')
+        ptree.put_double('charge_current', 10.0)
+        ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
+        ptree.put_double('charge_voltage_limit', 4.54)
+        ptree.put_bool('charge_voltage_finish', True)
+        ptree.put_double('charge_voltage_finish_max_time', 300.0)
+        ptree.put_double('charge_voltage_finish_current_limit', 1.0)
+
+        cccv = Charge(ptree)
+        cccv.run(D2)
+        D2.outbot.write_main_output()
+
+        # check the output lists of both devices
+        o1 = D1.outbot
+        o2 = D2.outbot
+        self.assertEqual(len(o1.time), len(o2.time))
+        for i in range(len(o1.time)):
+            self.assertAlmostEqual(o1.time[i], o2.time[i])
+            self.assertAlmostEqual(o1.potential[i], o2.potential[i],
+                                   delta=1e-4)
+            self.assertAlmostEqual(o1.curr[i], o2.curr[i])
 
 if __name__ == '__main__':
     unittest.main()
