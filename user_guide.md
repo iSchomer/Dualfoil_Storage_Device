@@ -32,6 +32,28 @@ Dual generates the following output files:
   + `cellpot` calculates and writes the data found in dualfoil5.out
   + `nucamb` calculates and writes the data for profiles.out
 
+###The Equations
+
+The main equations are found within the `comp` subroutine. Here is the logic for that section:
+  + Its main loop iterates for the number of specified nodes
+  + Before solving equations, several 2D arrays (# of equations by # of equations) are initialized
+  + Solve each equation, storing the updated values in the temporary arrays
+  + Update permanent arrays and repeat until each node has been calculated from left to right
+
+Below is the list of equations; each name corresponds with what it is solving for
+  1. Liquid phase concentration
+    + uses constant volume approach
+  2. Ohm's Law in solution
+    + solves for solution potential
+  3. Solid phase material balance
+  4. Current density
+  5. Porewall flux and Butler-Volmer kinetics
+  6. Ohm's Law in the matrix
+    + solves for matrix potential
+  7. Mode converge
+  8. Material Balance and kinetics of side reactions 1 and 2
+  9. Kinetics only for side reactions 3
+
 ###Table of important locations 
 
 | 5.1 Line(s) | 5.2 Line(s) | Description                                                                                        |
