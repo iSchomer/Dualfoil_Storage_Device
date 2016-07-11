@@ -12,49 +12,44 @@ class Dualfoil(EnergyStorageDevice):
     
     Attributes
     ----------
+    inbot : InputManager
+        object that maintains input data
     outbot : OutputManager
         object that maintains output data
-    filePath : str
+    file_path : str
         Full or relative path to dualfoil files
-    fileName : str
+    file_name : str
         Name of the input file used by dualfoil
-    restart : bool
-        Indicates whether the next leg or simulation will be from a restart
     """
 
-    def __init__(self, Path='', Input='dualfoil5.in'):
+    def __init__(self, path=None, input_name='dualfoil5.in'):
         
         """
+        NOTE: Altough the `path` parameter is optional,
+              this variable must be included if dualfoil
+              files are not in the same directory.
+        
         Parameters
         ----------
-        Path : str, optional
+        path : str, optional
             Full or relative path to dualfoil files
-        Input : str, optional
+        input_name : str, optional
             Name of the input file used by dualfoil
         """
 
-        if not Path.endswith('/') and len(Path) != 0:
-            Path += '/'
-        self.filePath = Path
-        self.fileName = Input
-        self.restart = False
+        self.set_file_path(path)
+        self.fileName = input_name
 
-        self.outbot = df_manip.OutputManager(path=self.filePath)
-
-        # compile dualfoil
-        if self.filePath == '':
-            subprocess.call('make clean && make dualfoil', shell=True)
-        else:
-            subprocess.call('cd %s && make clean && make dualfoil'
-                            % self.filePath, shell=True)
+        self.inbot = df_manip.InputManager(path, input_name)
+        self.outbot = df_manip.OutputManager(path)
 
     # use when wanting to start a new simulation from scratch
     def reset(self):
         """
-        Resets restart value
+        Resets input and output managers
         Clears all output data lists
         """
-        self.restart = False
+        self.inbot.reset()
         self.outbot.reset()
 
     def run(self):
@@ -62,28 +57,25 @@ class Dualfoil(EnergyStorageDevice):
         Runs dualfoil and updates `restart` value accordingly
         """
 
-        #update restart value
-        if not self.restart:
-            self.restart = True
-
-        if self.filePath == '':
+        if self.file_path == '':
             subprocess.call('./dualfoil', shell=True)
         else:
-            subprocess.call('cd %s && ./dualfoil' % self.filePath, shell=True)
+            subprocess.call('cd %s && ./dualfoil' % self.file_path, shell=True)
 
-    def set_filepath(self, path):
+    def set_file_path(self, path):
         """
-        assigns the parameter to `filePath`
+        assigns the parameter to `file_path`
         
         Parameters
         ----------
         path : str
             Full or relative path to dualfoil files
         """
-        if not path.endswith('/'):
-            path += '/'
-        self.filePath = path
-        self.outbot.set_filepath(self.filePath)
+        if path is not None:
+            if not path.endswith('/'):
+                path += '/'
+        self.inbot.set_file_path(path)
+        self.outbot.set_file_path(path)
 
     def get_voltage(self):
         v = self.outbot.get_voltage()
@@ -104,23 +96,6 @@ class Dualfoil(EnergyStorageDevice):
             self.reset()
         return c
 
-    def get_total_time(self):
-        """
-        Get the total dualfoil simulation runtime
-        
-        Returns
-        -------
-        float
-            the total time in minutes
-        """
-        rstFile = open('%sdf_restart.dat' % self.filePath, 'r')
-        tmp = rstFile.readline()
-        tmp = tmp.lstrip().split()
-        # get timestep in minutes
-        ts = float(tmp[1]) / 60
-        rstFile.close()
-        return ts
-
     def get_time_step(self):
         """
         Get the dualfoil's last-used time step value
@@ -128,13 +103,13 @@ class Dualfoil(EnergyStorageDevice):
         Returns
         -------
         float
-            time step in minutes
+            time step in seconds
         """
-        rstFile = open('%sdf_restart.dat' % self.filePath, 'r')
+        rstFile = open('%sdf_restart.dat' % self.file_path, 'r')
         tmp = rstFile.readline()
         tmp = tmp.lstrip().split()
         # get timestep in minutes
-        ts = float(tmp[0]) / 60
+        ts = float(tmp[0])
         rstFile.close()
         return ts
 
@@ -146,29 +121,25 @@ class Dualfoil(EnergyStorageDevice):
         current = -current
 
         time_step = time_step / 60
-        df_manip.add_new_leg(current, time_step, 1, "constant current",
-                             path=self.filePath, restart=self.restart)
+        self.inbot.add_new_leg(current, time_step, 1, "constant current")
         self.run()
         self.outbot.update_output()
 
     def evolve_one_time_step_constant_voltage(self, time_step, voltage):
         time_step = time_step / 60
-        df_manip.add_new_leg(voltage, time_step, 0, "constant voltage",
-                             path=self.filePath, restart=self.restart)
+        self.inbot.add_new_leg(voltage, time_step, 0, "constant voltage")
         self.run()
         self.outbot.update_output()
 
     def evolve_one_time_step_constant_power(self, time_step, power):
         time_step = time_step / 60
-        df_manip.add_new_leg(power, time_step, -2, "constant power",
-                             path=self.filePath, restart=self.restart)
+        self.inbot.add_new_leg(power, time_step, -2, "constant power")
         self.run()
         self.outbot.update_output()
 
     def evolve_one_time_step_constant_load(self, time_step, load):
         time_step = time_step / 60
-        df_manip.add_new_leg(load, time_step, -3, "constant load",
-                             path=self.filePath, restart=self.restart)
+        self.inbot.add_new_leg(load, time_step, -3, "constant load")
         self.run()
         self.outbot.update_output()
 
@@ -187,8 +158,7 @@ class Dualfoil(EnergyStorageDevice):
         # dualfoil currents: + for discharge, - for charge
         current = -current
 
-        df_manip.add_new_leg(current, cutoff, 2, "constant current",
-                             path=self.filePath, restart=self.restart)
+        self.inbot.add_new_leg(current, cutoff, 2, "constant current")
         self.run()
         self.outbot.update_output()
 
@@ -212,7 +182,7 @@ class Dualfoil(EnergyStorageDevice):
         current = -current
 
         time_step = time_step / 60
-        if self.restart:
+        if self.inbot.from_restart:
             linCurr = self.get_current()
         else:
             linCurr = 0.0
@@ -222,8 +192,7 @@ class Dualfoil(EnergyStorageDevice):
         
 
         while ttot <= time_step:
-            df_manip.add_new_leg(linCurr, ts, 1, "linear current",
-                                 path=self.filePath, restart=self.restart)
+            self.inbot.add_new_leg(linCurr, ts, 1, "linear current")
             # get next timestep values
             ttot += ts
             linCurr += change
@@ -252,8 +221,7 @@ class Dualfoil(EnergyStorageDevice):
         change = (voltage-linearV) / divisor
 
         while tott <= time_step:
-            df_manip.add_new_leg(linearV, ts, 0, "linear voltage",
-                                 path=self.filePath, restart=self.restart)
+            self.inbot.add_new_leg(linearV, ts, 0, "linear voltage")
             # get next timestep values
             tott += ts
             linearV += change
@@ -286,8 +254,7 @@ class Dualfoil(EnergyStorageDevice):
         linPow = start_point
 
         while tott <= time_step:
-            df_manip.add_new_leg(linPow, ts, -2, "linear power",
-                                 path=self.filePath, restart=self.restart)
+            self.inbot.add_new_leg(linPow, ts, -2, "linear power")
             # get next timestep values
             tott += ts
             linPow += change
@@ -318,8 +285,7 @@ class Dualfoil(EnergyStorageDevice):
         linLoad = start_point
 
         while tott <= time_step:
-            df_manip.add_new_leg(linLoad, ts, -3, "linear load",
-                                 path=self.filePath, restart=self.restart)
+            self.inbot.add_new_leg(linLoad, ts, -3, "linear load")
             # get next timestep values
             tott += ts
             linLoad += change

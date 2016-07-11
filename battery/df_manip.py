@@ -2,6 +2,7 @@ __all__ = ['add_new_leg', 'extract_main_output',
            'extract_profiles', 'OutputManager']
 
 import subprocess
+from datetime import datetime
 
 """
 Module for manipulating the input and output of dualfoil5.1
@@ -9,92 +10,130 @@ Module for manipulating the input and output of dualfoil5.1
 
 # INPUT
 
-def add_new_leg(cu, tt, mc, descr='', path='', 
-                restart=True, vcutL=0.0001, vcutH=12.0):
-    """
-    Appends a new leg to dualfoil's input file,
-    which works with or without restart
+class InputManager:
 
-    Parameters
-    ----------
-    cu : float
-        defines cu(i) for the input
-        if mc = 1 or 2, cu is the current
-        if mc = 0, cu is the potential
-    tt : float
-        defines tt(i) for the input
-        if mc = 0 or 1, tt is the new leg's duration (min)
-        if mc = 2, tt is the cuttof potential (V)
-    mc : float
-        defines mc(i) for the input, which controls mode of operation
-        possible values for dualfoil 5.2 are 0, 1, and 2
-    vcutL : float, optional
-        Low Voltage cutoff point
-    vcutH : float, optional
-        High Voltage cutoff point
-    descr : str, optional
-        comment that describes the function of the new leg
-    path : str, optional
-        Full or relative path to dualfoil's input file
-    restart : bool, optional
-        Indicates if simulation will begin from restart data
     """
-
-    newInput = ''
-    newLeg = ''
-    modified = False
+    Used as a complimentative class for `Dualfoil`
     
-    if not path.endswith('/') and len(path) != 0:
-        path += '/'
-    with open('%sdualfoil5.in' % path, 'r+') as file:
+    Manages the input file for dualfoil; used to start new simulations
+    and continue from restarts.
+    
+    Attributes
+    ----------
+    file_name: str
+        Name of the input file to be used by dualfoil
+    file_path: str
+        Full or relative path to dualfoil files
+    from_restart: bool
+        indicates whether the next simulation will occur from a restart
+    low_voltage_cut, high_voltage_cut: float
+        Parameter used by dualfoil that cuts off simulation at these values
+    """
 
-        line = file.readline()
-        while line != '':
-            if restart:
-                # make sure restart is set to true
-                if line.find('.false.') != -1:
-                    line = line.replace('.false.', '.true.')
-            else:
-                # make sure restart is set to true
-                if line.find('.true.') != -1:
-                    line = line.replace('.true.', '.false.')
+    def __init__(self, path, input_name):
+        """
+        Parameters
+        ----------
+        path : str
+            Full or relative path to dualfoil files
+        input_name : str
+            Name of the input file
+        """
+        if path is None: 
+            self.file_path = ''
+        else:
+            self.file_path = path
+        self.file_name = name
+        self.from_restart = False
 
-            # find line before the one we need; set tracker for next loopthru
-            if line.find('lcurs') != -1 and not modified:
-                tmp = line.lstrip().split()
-                # also make sure lcurs is 1
-                if int(tmp[0]) != 1:
-                    line = line.replace(str(tmp[0]), '1', 1)
-                newInput += line
+    def reset(self):
+        from_restart = False
 
-                # skip over all other command lines
-                while line != '\n':
-                    line = file.readline()
-                # if next leg depends on time, we need the total time
-                if (mc == 2) or (mc == -1):
-                    # depends on cutoff potential; don't alter tt(i)
-                    line = (str(cu) + ' ' + str(tt) + ' ' + str(mc) +
-                            ' ' + str(vcutL) + ' ' +
-                            str(vcutH) + ' !' + descr + '\n\n')
-                else:
-                    if restart:
-                        # depends on time AND we are from restart. need total
-                        totT = get_total_time(path)
-                        tt += totT
-                    line = (str(cu) + ' ' + str(tt) + ' ' + str(mc) +
-                            ' ' + str(vcutL) + ' ' +
-                            str(vcutH) + ' !' + descr + '\n\n')
-                # don't do this again even if 'lcurs' is in file again
-                modified = True
+    def add_new_leg(self, run_value, stop_condition, mode, descr=None):
+        """
+        Appends a new leg to dualfoil's input file,
+        which works with or without restart
+        
+        Format for a given experiment:
+        "Specified (run_value) to/for a given (stop_condition)"
+        The value of the mode will determine the meaning of `run_value` and `stop_condition`
 
-            # keep up the new file and read next line
-            newInput += line
+        Parameters
+        ----------
+        run_value : float
+            See below for the different meanings this value can take on
+        stop_condition : float
+            See below for the different meanings this value can take on
+        mode : float
+            defines 'mc(i)' for the input in dualfoil, which controls mode of operation
+            Possible Values
+            ---------------
+            -3: specified load (ohms-m2) for a given time(min)
+            -2: specified power (ohms-m2) for a given time (min)
+            -1: specified tapered current (A) to a cutoff potential (V)
+             0: specified voltage (V) for a give time (min) 
+             1: specified current (A) for a given time (min)
+             2: specified current (A) to a cutoff potential (V)    
+        descr : str, optional
+            comment that describes the function of the new leg
+        """
+
+        new_input = ''
+        modified = False
+
+        df_input = file_path + file_name
+        with open('%s' % df_input, 'r+') as file:
+
             line = file.readline()
+            while line != '':
+                if from_restart:
+                    # make sure from_restart is set to true
+                    if line.find('.false.') != -1:
+                        line = line.replace('.false.', '.true.')
+                else:
+                    # make sure from_restart is set to false
+                    if line.find('.true.') != -1:
+                        line = line.replace('.true.', '.false.')
 
-    with open('%sdualfoil5.in' % path, 'w') as file:
-        file.write(newInput)
+                # find line before the one we need; set tracker for next loopthru
+                if line.find('lcurs') != -1 and not modified:
+                    tmp = line.lstrip().split()
+                    # also make sure lcurs is 1
+                    if int(tmp[0]) != 1:
+                        line = line.replace(str(tmp[0]), '1', 1)
+                    new_input += line
 
-def get_total_time(path=''):
+                    # skip over all other command lines
+                    while line != '\n':
+                        line = file.readline()
+                    # if next leg depends on time, we need the total time
+                    if (mode != 2) and (mode != -1):
+                        if from_restart:
+                            # depends on time AND we are from restart. 
+                            # need total in minutes for dualfoil
+                            totT = get_total_time(self.file_path) / 60 
+                            stop_condition += totT
+
+                    line = (str(run_value) + ' ' + str(stop_condition) +
+                            ' ' + str(mode) + ' ' + str(low_voltage_cut) +
+                            ' ' + str(high_voltage_cut) + '\n\n')
+                    if descr is not None:
+                        line = line + ' !' + descr
+                    # don't do this again even if 'lcurs' is in file again
+                    modified = True
+
+                # keep up the new file and read next line
+                new_input += line
+                line = file.readline()
+
+        with open(df_input, 'w') as file:
+            file.write(new_input)
+            
+        # if this is our first time, next will be from restart
+        if not from_restart:
+            from_restart = True
+
+def get_total_time(path=None):
     """
     Get the total dualfoil simulation time in minutes
     
@@ -103,26 +142,29 @@ def get_total_time(path=''):
     path : str, optional
         Full or relative path to dualfoil files
     """
-    rstFile = open('%sdf_restart.dat' % path, 'r')
+    if path is none:
+        rstFile = open('df_restart.dat', 'r')
+    else:
+        rstFile = open('%sdf_restart.dat' % path, 'r')
     tmp = rstFile.readline()
     tmp = tmp.lstrip().split()
-    # get timestep in minutes
-    ts = float(tmp[1]) / 60
+    # get timestep in seconds
+    ts = float(tmp[1])
     rstFile.close()
     return ts
         
 # OUTPUT:
 # for extracting and organizing data from dualfoil5.out
 
-def extract_main_output(file='dualfoil5.out', path=''):
+def extract_main_output(file='dualfoil5.out', path=None):
     """
     Gathers data from dualfoil5.out generated by dualfoil
     
     Parameters
     ----------
-    file : str
+    file : str, optional
         main output file (most likely "Dualfoil5.out") generated by Dualfoil5.1
-    path : str
+    path : str, optional
         path to get to file, if not in current directory
 
     Returns
@@ -146,9 +188,10 @@ def extract_main_output(file='dualfoil5.out', path=''):
     # first go through and find position where output starts in file
     x = 0
     previous = ''
-    if not path.endswith('/') and len(path) != 0:
-        path += '/'
-    fpath = path + file
+    if path is not None:
+        fpath = path + file
+    else:
+        fpath = file
     with open(fpath, 'r') as fin:
         data_list = []
 
@@ -202,7 +245,7 @@ def extract_main_output(file='dualfoil5.out', path=''):
     return time, n_util, p_util, potential, uocp, curr, temp, heatgen
 
 
-def extract_profiles(file='profiles.out', path=''):
+def extract_profiles(file='profiles.out', path=None):
 
     """
     Gathers data from profiles.out generated by dualfoil.
@@ -240,9 +283,10 @@ def extract_profiles(file='profiles.out', path=''):
         third side reaction liquid current density in amperes/square meters
     """
 
-    if not path.endswith('/') and len(path) != 0:
-        path += '/'
-    fpath = path + file
+    if path is not None:
+        fpath = path + file
+    else:
+        fpath = path
     with open(fpath, 'r') as fin:
         profile_list = []
         profile = []
@@ -324,11 +368,13 @@ def extract_profiles(file='profiles.out', path=''):
 
 class OutputManager:
     """
+    Used as a complimentative class for `Dualfoil`
+    
     Maintains the output generated by dualfoil
     
     Attributes
     ----------
-    filePath : str
+    file_path : str
         Full or relative path to dualfoil files
     time : list of float
         the time in seconds
@@ -368,19 +414,20 @@ class OutputManager:
         third side reaction liquid current density
     """
     
-    def __init__(self, path=''):
+    def __init__(self, path):
         """
         Initialize output list variables.
         
         Parameters
         ----------
-        path : string
+        path : str
             Full or relative path to dualfoil files
         """
 
-        if not path.endswith('/') and len(path) != 0:
-            path += '/'
-        self.filePath = path
+        if path is None: 
+            self.file_path = ''
+        else:
+            self.file_path = path
 
         # main output list variables
         self.time = []
@@ -429,19 +476,6 @@ class OutputManager:
         self.jside2_prof.clear()
         self.jside3_prof.clear()
 
-    def set_filepath(self, path):
-        """
-        assigns the parameter to `filePath`
-        
-        Parameters
-        ----------
-        path : str
-            Full or relative path to dualfoil files
-        """
-        if not path.endswith('/'):
-            path += '/'
-        self.filePath = path
-
     def get_voltage(self):
         """
         Get the voltage, or return -1 if there is no output
@@ -475,29 +509,29 @@ class OutputManager:
         into the appropriate data list.
         """
         # main output
-        x = extract_main_output(path=self.filePath)
-        self.time += x[0]
-        self.n_util += x[1]
-        self.p_util += x[2]
-        self.potential += x[3]
-        self.uocp += x[4]
-        self.curr += x[5]
-        self.temp += x[6]
-        self.heatgen += x[7]
+        x = extract_main_output(path=self.file_path)
+        self.time.extend(x[0])
+        self.n_util.extend(x[1])
+        self.p_util.extend(x[2])
+        self.potential.extend(x[3])
+        self.uocp.extend(x[4])
+        self.curr.extend(x[5])
+        self.temp.extend(x[6])
+        self.heatgen.extend(x[7])
 
         # profiles
-        x = extract_profiles(path=self.filePath)
-        self.time_prof += x[0]
-        self.distance_prof = x[1]
-        self.elec_conc_prof += x[2]
-        self.sol_surf_conc_prof += x[3]
-        self.liq_pot_prof += x[4]
-        self.sol_pot_prof += x[5]
-        self.liq_cur_prof += x[6]
-        self.jmain_prof += x[7]
-        self.jside1_prof += x[8]
-        self.jside2_prof += x[9]
-        self.jside3_prof += x[10]
+        x = extract_profiles(path=self.file_path)
+        self.time_prof.extend(x[0])
+        self.distance_prof.extend(x[1])
+        self.elec_conc_prof.extend(x[2])
+        self.sol_surf_conc_prof.extend(x[3])
+        self.liq_pot_prof.extend(x[4])
+        self.sol_pot_prof.extend(x[5])
+        self.liq_cur_prof.extend(x[6])
+        self.jmain_prof.extend(x[7])
+        self.jside1_prof.extend(x[8])
+        self.jside2_prof.extend(x[9])
+        self.jside3_prof.extend(x[10])
 
     def write_main_output(self):
         """
@@ -507,18 +541,17 @@ class OutputManager:
 
         output = [self.time, self.n_util, self.p_util, self.potential,
                   self.uocp, self.curr, self.temp, self.heatgen]
-        subprocess.call('date > %scombinedOutput.out' % self.filePath,
-                        shell=True)
-
         # main output data
-        with open('%scombinedOutput.out' % self.filePath, 'a') as outFile:
-            outFile.write('\nMain Output data\n\n')
-            outFile.write('     Time     N_util   P_util   Potential   Uocp       Curr      Temp    Heatgen\n')
-            outFile.write('     (min)      x         y        (v)      (v)       (A/m2)      (C)     (W/m2)\n\n')
+        with open('%scombinedOutput.out' % self.file_path, 'r') as out_file:
+            date = datetime.now().isoformat() + '\n\n'
+            out_file.write(date)
+            out_file.write('Main Output data\n\n')
+            out_file.write('     Time     N_util   P_util   Potential   Uocp       Curr      Temp    Heatgen\n')
+            out_file.write('     (min)      x         y        (v)      (v)       (A/m2)      (C)     (W/m2)\n\n')
             for i in range(len(self.time)):
                 for j in range(len(output)):
-                    outFile.write(str(output[j][i]).rjust(9))
-                    outFile.write(',')
+                    out_file.write(str(output[j][i]).rjust(9))
+                    out_file.write(',')
                     if j == (len(output)-1):
-                        outFile.write('\n')
+                        out_file.write('\n')
     
