@@ -1,12 +1,17 @@
-__all__ = ['add_new_leg', 'extract_main_output',
-           'extract_profiles', 'OutputManager']
+__all__ = ['InputManager', 'extract_main_output',
+           'extract_profiles', 'OutputManager',
+           'get_total_time']
 
-import subprocess
 from datetime import datetime
 
 """
 Module for manipulating the input and output of dualfoil5.1
+
+Note: uses a global variable `file_path` as the path to dualfoil files
 """
+
+# global variable
+file_path = None
 
 # INPUT
 
@@ -30,24 +35,26 @@ class InputManager:
         Parameter used by dualfoil that cuts off simulation at these values
     """
 
-    def __init__(self, path, input_name):
+    def __init__(self, path, input_name='dualfoil5.in'):
         """
         Parameters
         ----------
         path : str
             Full or relative path to dualfoil files
-        input_name : str
+        input_name : str, optional
             Name of the input file
         """
         if path is None: 
             self.file_path = ''
         else:
             self.file_path = path
-        self.file_name = name
+        self.file_name = input_name
         self.from_restart = False
+        self.low_voltage_cut = 1e-3
+        self.high_voltage_cut = 14.0
 
     def reset(self):
-        from_restart = False
+        self.from_restart = False
 
     def add_new_leg(self, run_value, stop_condition, mode, descr=None):
         """
@@ -81,12 +88,12 @@ class InputManager:
         new_input = ''
         modified = False
 
-        df_input = file_path + file_name
+        df_input = self.file_path + self.file_name
         with open('%s' % df_input, 'r+') as file:
 
             line = file.readline()
             while line != '':
-                if from_restart:
+                if self.from_restart:
                     # make sure from_restart is set to true
                     if line.find('.false.') != -1:
                         line = line.replace('.false.', '.true.')
@@ -108,15 +115,15 @@ class InputManager:
                         line = file.readline()
                     # if next leg depends on time, we need the total time
                     if (mode != 2) and (mode != -1):
-                        if from_restart:
+                        if self.from_restart:
                             # depends on time AND we are from restart. 
                             # need total in minutes for dualfoil
                             totT = get_total_time(self.file_path) / 60 
                             stop_condition += totT
 
                     line = (str(run_value) + ' ' + str(stop_condition) +
-                            ' ' + str(mode) + ' ' + str(low_voltage_cut) +
-                            ' ' + str(high_voltage_cut) + '\n\n')
+                            ' ' + str(mode) + ' ' + str(self.low_voltage_cut) +
+                            ' ' + str(self.high_voltage_cut) + '\n\n')
                     if descr is not None:
                         line = line + ' !' + descr
                     # don't do this again even if 'lcurs' is in file again
@@ -130,8 +137,8 @@ class InputManager:
             file.write(new_input)
             
         # if this is our first time, next will be from restart
-        if not from_restart:
-            from_restart = True
+        if not self.from_restart:
+            self.from_restart = True
 
 def get_total_time(path=None):
     """
@@ -142,7 +149,8 @@ def get_total_time(path=None):
     path : str, optional
         Full or relative path to dualfoil files
     """
-    if path is none:
+
+    if path is None:
         rstFile = open('df_restart.dat', 'r')
     else:
         rstFile = open('%sdf_restart.dat' % path, 'r')
@@ -542,10 +550,10 @@ class OutputManager:
         output = [self.time, self.n_util, self.p_util, self.potential,
                   self.uocp, self.curr, self.temp, self.heatgen]
         # main output data
-        with open('%scombinedOutput.out' % self.file_path, 'r') as out_file:
-            date = datetime.now().isoformat() + '\n\n'
+        with open('%scombinedOutput.out' % self.file_path, 'w') as out_file:
+            date = str(datetime.now().isoformat())
             out_file.write(date)
-            out_file.write('Main Output data\n\n')
+            out_file.write('\n\nMain Output data\n\n')
             out_file.write('     Time     N_util   P_util   Potential   Uocp       Curr      Temp    Heatgen\n')
             out_file.write('     (min)      x         y        (v)      (v)       (A/m2)      (C)     (W/m2)\n\n')
             for i in range(len(self.time)):

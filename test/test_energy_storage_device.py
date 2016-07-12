@@ -6,13 +6,11 @@ from pycap import PropertyTree, Charge
 
 import unittest
 
-path = '/notebooks/docker'
+path = '/notebooks/docker/'
 
 class DualfoilTestCase(unittest.TestCase):
     def test_consistency_constant_evolve_functions(self):
-        df = Dualfoil()
-        df.set_filepath(path)
-        self.assertTrue(df.filePath == '/notebooks/docker/')
+        df = Dualfoil(path=path)
 
         # determine that what we want is what we get
         # constant evolve functions
@@ -20,23 +18,27 @@ class DualfoilTestCase(unittest.TestCase):
         I = 5.0   # current
         df.evolve_one_time_step_constant_current(dt, I)
         self.assertAlmostEqual(df.get_current(), I*-1)
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         df.reset()
         V = 4.5  # voltage
         df.evolve_one_time_step_constant_voltage(dt, V)
         self.assertAlmostEqual(df.get_voltage(), V)
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         df.reset()
         P = 15.0  # watts/m2
         df.evolve_one_time_step_constant_power(dt, P)
         power = df.get_voltage() * df.get_current()
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         self.assertAlmostEqual(power, P, delta=1e-2)
         df.reset()
         L = 0.7  # ohms-m2
         df.evolve_one_time_step_constant_load(dt, L)
         load = df.get_voltage() / df.get_current()
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         self.assertAlmostEqual(load, L, delta=1e-2)
         df.reset()
         Vcut = 4.3  # cutoff voltage
@@ -47,19 +49,20 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
 
     def test_consistency_linear_evolve_functions(self):
-        df = Dualfoil(Path=path)
+        df = Dualfoil(path=path)
 
         # affirm total time and final dependent value
         dt = 15.0  # seconds
         div = 4    # number of substeps
         Cfin = -10.0  # final current (charge)
         df.evolve_one_time_step_linear_current(dt, Cfin, div)
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path), dt)
         self.assertAlmostEqual(df.get_current(), Cfin*-1)
         df.reset()
         Vfin = 4.3  # final current (lower than initial)
         df.evolve_one_time_step_linear_voltage(dt, Vfin, div)
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         self.assertAlmostEqual(df.get_voltage(), Vfin)
         df.reset()
         Pfin = 16.0  # final power
@@ -68,35 +71,37 @@ class DualfoilTestCase(unittest.TestCase):
                                              start_point=8.0)
         power = df.get_voltage() * df.get_current()
         self.assertAlmostEqual(power, Pfin, delta=.05)
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         df.reset()
         Lfin = 12.0  # final load
         df.evolve_one_time_step_linear_load(dt, Lfin,
                                             divisor=div,
                                             start_point=8.0)
         load = df.get_voltage() / df.get_current()
-        self.assertAlmostEqual(df.get_total_time(), dt / 60)
+        self.assertAlmostEqual(df_manip.get_total_time(path),
+                               dt)
         self.assertAlmostEqual(load, Lfin, delta=0.5)
         df.reset()
         
     def test_pycap_simulation(self):
-        # TODO 
-        D1 = Dualfoil(Path=path)  # will use pycap
-        D2 = Dualfoil(Path=path)  # manual runs
-        self.assertFalse(D1.restart)
-        self.assertFalse(D2.restart)
+        # 
+        # weak run test; simply ensures that Dualfoil object
+        # can be run with pycap.Charge
+        #
+        D1 = Dualfoil(path=path)  # will use pycap
+        D2 = Dualfoil(path=path)  # manual runs
+        im = df_manip.InputManager(path=path)
 
         # testing a charge-to-hold-const-voltage
         # manual 
         # use df_manip to set the input file
         c = -10.0  # constant current
-        df_manip.add_new_leg(c, 5.0, 1, path=path,
-                             restart=False)
+        im.add_new_leg(c, 5.0, 1)
         D1.run()
         D1.outbot.update_output()
         v = 4.54  # constant voltage
-        df_manip.add_new_leg(v, 5.0, 0, path=path,
-                             restart=True)
+        im.add_new_leg(v, 5.0, 0)
         D1.run()
         D1.outbot.update_output()
 
@@ -122,8 +127,10 @@ class DualfoilTestCase(unittest.TestCase):
         self.assertEqual(len(o1.time), len(o2.time))
         for i in range(len(o1.time)):
             self.assertAlmostEqual(o1.time[i], o2.time[i])
+            # relaxed delta because this is the last printed
+            # decimal place in output
             self.assertAlmostEqual(o1.potential[i], o2.potential[i],
-                                   delta=1e-4)
+                                   delta=1e-5)
             self.assertAlmostEqual(o1.curr[i], o2.curr[i])
 
 if __name__ == '__main__':
