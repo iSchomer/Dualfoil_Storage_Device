@@ -10,21 +10,29 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
 ## Installation
  1. Make sure you have downloaded the latest non-beta version of [docker](https://www.docker.com/products/overview "Get Docker")
  2. Pull the Cap image `dalg24/cap` by copying and pasting the following command into your shell:
+
  ```
  docker pull dalg24/cap
  ```
+
  3. Now clone this repository with the following command:
+
  ```
  git clone https://github.com/iSchomer/Dualfoil_Storage_Device.git
  ```
+
  4. This should download a `Dualfoil_Storage_Device` directory. Change into it:
+
  ```
  cd Dualfoil_Storage_Device/
  ```
+
  5. Lastly, run a docker container with the pycap image:
+
  ```
  docker run --rm -it -p 8888:8888 -v $PWD:/notebooks dalg24/cap
  ```
+
  6. We use a Jupyter Notebook as our interface; To get there, open up a browser and type in the ip address of your machine into the web address bar.
 
 
@@ -62,6 +70,7 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  
  from pycap import initialize_data, plot_data
  data = initialize_data()
+ device.reset()
  # run the simulation and plot the data
  cccv = pycap.Charge(ptree)
  cccv.run(device, data)
