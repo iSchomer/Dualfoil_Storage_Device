@@ -204,28 +204,29 @@ class Dualfoil(EnergyStorageDevice):
         current = -current
 
         time_step = time_step / 60
+        total_time = time_step
         if self.inbot.from_restart:
-            linCurr = self.get_current()
+            linear_current = self.get_current()
         else:
-            linCurr = 0.0
-        ts = time_step / (divisor+1)
-        ttot = ts
-        change = (current-linCurr) / divisor
+            linear_current = 0.0
+        time_step = time_step / (divisor+1)
+        run_time = time_step
+        change = (current-linear_current) / divisor
         
-
-        while ttot <= time_step:
-            try:
-                self.inbot.add_new_leg(linCurr, ts, 1, "linear current")
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_current, time_step, 1,
+                                       "linear current")
                 # get next timestep values and run
-                ttot += ts
-                linCurr += change
+                run_time += time_step
+                linear_current += change
                 self.run()
                 self.outbot.update_output()
-            except FileNotFoundError as err:
-                # handles incorrect path
-                err = str(err)
-                err = err.split('] ')[-1]
-                print("Error when executing dualfoil: ", err)
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_linear_voltage(self, time_step, voltage,
                                             divisor=10):
@@ -243,24 +244,26 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the voltage increase
         """
         time_step = time_step / 60
-        linearV = self.get_voltage()
-        ts = time_step / (divisor+1)
-        tott = ts
-        change = (voltage-linearV) / divisor
+        total_time = time_step
+        linear_voltage = self.get_voltage()
+        time_step = time_step / (divisor+1)
+        run_time = time_step
+        change = (voltage-linear_voltage) / divisor
 
-        while tott <= time_step:
-            try:
-                self.inbot.add_new_leg(linearV, ts, 0, "linear voltage")
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_voltage, time_step, 0,
+                                       "linear voltage")
                 # get next timestep values and run
-                tott += ts
-                linearV += change
+                run_time += time_step
+                linear_voltage += change
                 self.run()
                 self.outbot.update_output()
-            except FileNotFoundError as err:
-                # handles incorrect path
-                err = str(err)
-                err = err.split('] ')[-1]
-                print("Error when executing dualfoil: ", err)
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     # start_point parameter added to the following 2 functions
     # because they cannot be extracted
@@ -282,24 +285,26 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the power increase
         """
         time_step = time_step / 60
-        ts = time_step / (divisor+1)
-        tott = ts
+        total_time = time_step
+        time_step = time_step / (divisor+1)
+        run_time = time_step
         change = (power-start_point) / divisor
-        linPow = start_point
+        linear_power = start_point
 
-        while tott <= time_step:
-            try:
-                self.inbot.add_new_leg(linPow, ts, -2, "linear power")
+        
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_power, time_step, -2, "linear power")
                 # get next timestep values and run
-                tott += ts
-                linPow += change
+                run_time += time_step
+                linear_power += change
                 self.run()
                 self.outbot.update_output()
-            except FileNotFoundError as err:
-                # handles incorrect path
-                err = str(err)
-                err = err.split('] ')[-1]
-                print("Error when executing dualfoil: ", err)
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_linear_load(self, time_step, load,
                                          start_point=0.0, divisor=10):
@@ -319,21 +324,23 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the current increase
         """
         time_step = time_step / 60
-        ts = time_step / (divisor+1)
-        tott = ts
+        total_time = time_step
+        time_step = time_step / (divisor+1)
+        run_time = time_step
         change = (load-start_point) / divisor
-        linLoad = start_point
+        linear_load = start_point
 
-        while tott <= time_step:
-            try:
-                self.inbot.add_new_leg(linLoad, ts, -3, "linear load")
+        
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_load, time_step, -3, "linear load")
                 # get next timestep values and run
-                tott += ts
-                linLoad += change
+                run_time += time_step
+                linear_load += change
                 self.run()
                 self.outbot.update_output()
-            except FileNotFoundError as err:
-                # handles incorrect path
-                err = str(err)
-                err = err.split('] ')[-1]
-                print("Error when executing dualfoil: ", err)
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)

@@ -1,17 +1,12 @@
+"""
+Module for manipulating the input and output of dualfoil5.1
+"""
+
 __all__ = ['InputManager', 'extract_main_output',
            'extract_profiles', 'OutputManager',
            'get_total_time']
 
 from datetime import datetime
-
-"""
-Module for manipulating the input and output of dualfoil5.1
-
-Note: uses a global variable `file_path` as the path to dualfoil files
-"""
-
-# global variable
-file_path = None
 
 # INPUT
 
@@ -89,7 +84,7 @@ class InputManager:
         modified = False
 
         df_input = self.file_path + self.file_name
-        with open('%s' % df_input, 'r+') as file:
+        with open('%s' % df_input, 'r') as file:
 
             line = file.readline()
             while line != '':
@@ -118,14 +113,16 @@ class InputManager:
                         if self.from_restart:
                             # depends on time AND we are from restart. 
                             # need total in minutes for dualfoil
-                            totT = get_total_time(self.file_path) / 60 
-                            stop_condition += totT
+                            total_time = get_total_time(self.file_path) / 60 
+                            stop_condition += total_time
 
                     line = (str(run_value) + ' ' + str(stop_condition) +
                             ' ' + str(mode) + ' ' + str(self.low_voltage_cut) +
-                            ' ' + str(self.high_voltage_cut) + '\n\n')
+                            ' ' + str(self.high_voltage_cut))
                     if descr is not None:
-                        line = line + ' !' + descr
+                        line = line + ' !' + descr + '\n\n'
+                    else:
+                        line = line + '\n\n'
                     # don't do this again even if 'lcurs' is in file again
                     modified = True
 
@@ -151,15 +148,15 @@ def get_total_time(path=None):
     """
 
     if path is None:
-        rstFile = open('df_restart.dat', 'r')
+        restart_file = open('df_restart.dat', 'r')
     else:
-        rstFile = open('%sdf_restart.dat' % path, 'r')
-    tmp = rstFile.readline()
+        restart_file = open('%sdf_restart.dat' % path, 'r')
+    tmp = restart_file.readline()
     tmp = tmp.lstrip().split()
     # get timestep in seconds
-    ts = float(tmp[1])
-    rstFile.close()
-    return ts
+    time_step = float(tmp[1])
+    restart_file.close()
+    return time_step
         
 # OUTPUT:
 # for extracting and organizing data from dualfoil5.out
@@ -185,11 +182,11 @@ def extract_main_output(file='dualfoil5.out', path=None):
         the potential of the cell in volts
     uocp : list of float
         the open-circuit potential in volts
-    curr : list of float
+    current : list of float
         the current in amperes
-    temp : list of float
+    temperature : list of float
         the temperature in Celcius
-    heatgen : list of float
+    heat_gen : list of float
         the generated heat in Watts/m^2
     """
 
@@ -227,9 +224,9 @@ def extract_main_output(file='dualfoil5.out', path=None):
     p_util = []
     potential = []
     uocp = []
-    curr = []
-    temp = []
-    heatgen = []
+    current = []
+    temperature = []
+    heat_gen = []
 
     for data in data_list:
         tmp = data.split(',')
@@ -240,17 +237,17 @@ def extract_main_output(file='dualfoil5.out', path=None):
         p_util.append(float(tmp[2]))
         potential.append(float(tmp[3]))
         uocp.append(float(tmp[4]))
-        curr.append(float(tmp[5]))
-        temp.append(float(tmp[6]))
+        current.append(float(tmp[5]))
+        temperature.append(float(tmp[6]))
 
         # for 5.1 code
 
         if (tmp[7] == ' ******'):
             tmp[7] = '0.00'
-        heatgen.append(float(tmp[7]))
+        heat_gen.append(float(tmp[7]))
 
     # return data in order it appears
-    return time, n_util, p_util, potential, uocp, curr, temp, heatgen
+    return time, n_util, p_util, potential, uocp, current, temperature, heat_gen
 
 
 def extract_profiles(file='profiles.out', path=None):
@@ -283,11 +280,11 @@ def extract_profiles(file='profiles.out', path=None):
         the liquid current density in amperes/square meters
     jmain : list of list of floats
         main liquid current density in amperes/square meters
-    jside1 : list of list of floats
+    j_side1 : list of list of floats
         first side reaction liquid current density in amperes/square meters
-    jside2 : list of list of floats
+    j_side2 : list of list of floats
         second side reaction liquid current density in amperes/square meters
-    jside3 : list of list of floats
+    j_side3 : list of list of floats
         third side reaction liquid current density in amperes/square meters
     """
 
@@ -392,11 +389,11 @@ class OutputManager:
         the potential of the cell in volts
     uocp : list of float
         the open-circuit potential in volts
-    curr : list of float
+    current : list of float
         the current in amperes
-    temp : list of float
+    temperature : list of float
         the temperature in Celcius
-    heatgen : list of float
+    heat_gen : list of float
         the generated heat in Watts/m^2
     time_prof : list of floats
         the time in seconds each profile is taken
@@ -412,13 +409,13 @@ class OutputManager:
         the solid potential in volts
     liq_cur_prof : list of list of floats
         the liquid current density in amperes/square meters
-    jmain_prof : list of list of floats
+    j_main_prof : list of list of floats
         main liquid current density
-    jside1_prof : list of list of floats
+    j_side1_prof : list of list of floats
         first side reaction liquid current density
-    jside2_prof : list of list of floats
+    j_side2_prof : list of list of floats
         second side reaction liquid current density
-    jside3_prof : list of list of floats
+    j_side3_prof : list of list of floats
         third side reaction liquid current density
     """
     
@@ -443,9 +440,9 @@ class OutputManager:
         self.p_util = []
         self.potential = []
         self.uocp = []
-        self.curr = []
-        self.temp = []
-        self.heatgen = []
+        self.current = []
+        self.temperature = []
+        self.heat_gen = []
         
         # profile list variables
         self.time_prof = []
@@ -455,10 +452,10 @@ class OutputManager:
         self.liq_pot_prof = []
         self.sol_pot_prof = []
         self.liq_cur_prof = []
-        self.jmain_prof = []
-        self.jside1_prof = []
-        self.jside2_prof = []
-        self.jside3_prof = []
+        self.j_main_prof = []
+        self.j_side1_prof = []
+        self.j_side2_prof = []
+        self.j_side3_prof = []
         
     def reset(self):
         """
@@ -469,9 +466,9 @@ class OutputManager:
         self.p_util.clear()
         self.potential.clear()
         self.uocp.clear()
-        self.curr.clear()
-        self.temp.clear()
-        self.heatgen.clear()
+        self.current.clear()
+        self.temperature.clear()
+        self.heat_gen.clear()
         self.time_prof.clear()
         self.distance_prof.clear()
         self.elec_conc_prof.clear()
@@ -479,10 +476,10 @@ class OutputManager:
         self.liq_pot_prof.clear()
         self.sol_pot_prof.clear()
         self.liq_cur_prof.clear()
-        self.jmain_prof.clear()
-        self.jside1_prof.clear()
-        self.jside2_prof.clear()
-        self.jside3_prof.clear()
+        self.j_main_prof.clear()
+        self.j_side1_prof.clear()
+        self.j_side2_prof.clear()
+        self.j_side3_prof.clear()
 
     def get_voltage(self):
         """
@@ -504,12 +501,13 @@ class OutputManager:
         
         Returns
         -------
+        float
             the current in amperes
         """
-        if len(self.curr) == 0:
+        if len(self.current) == 0:
             return -1
         else:
-            return self.curr[-1]
+            return self.current[-1]
 
     def update_output(self):
         """
@@ -523,9 +521,9 @@ class OutputManager:
         self.p_util.extend(x[2])
         self.potential.extend(x[3])
         self.uocp.extend(x[4])
-        self.curr.extend(x[5])
-        self.temp.extend(x[6])
-        self.heatgen.extend(x[7])
+        self.current.extend(x[5])
+        self.temperature.extend(x[6])
+        self.heat_gen.extend(x[7])
 
         # profiles
         x = extract_profiles(path=self.file_path)
@@ -536,10 +534,10 @@ class OutputManager:
         self.liq_pot_prof.extend(x[4])
         self.sol_pot_prof.extend(x[5])
         self.liq_cur_prof.extend(x[6])
-        self.jmain_prof.extend(x[7])
-        self.jside1_prof.extend(x[8])
-        self.jside2_prof.extend(x[9])
-        self.jside3_prof.extend(x[10])
+        self.j_main_prof.extend(x[7])
+        self.j_side1_prof.extend(x[8])
+        self.j_side2_prof.extend(x[9])
+        self.j_side3_prof.extend(x[10])
 
     def write_main_output(self):
         """
@@ -548,7 +546,7 @@ class OutputManager:
         """
 
         output = [self.time, self.n_util, self.p_util, self.potential,
-                  self.uocp, self.curr, self.temp, self.heatgen]
+                  self.uocp, self.current, self.temperature, self.heat_gen]
         # main output data
         with open('%scombinedOutput.out' % self.file_path, 'w') as out_file:
             date = str(datetime.now().isoformat())

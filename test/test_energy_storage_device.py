@@ -104,7 +104,7 @@ class DualfoilTestCase(unittest.TestCase):
         im.add_new_leg(v, 5.0, 0)
         D1.run()
         D1.outbot.update_output()
-
+        
         # auto
         # build a ptree input
         ptree = PropertyTree()
@@ -119,7 +119,6 @@ class DualfoilTestCase(unittest.TestCase):
 
         cccv = Charge(ptree)
         cccv.run(D2)
-        D2.outbot.write_main_output()
 
         # check the output lists of both devices
         o1 = D1.outbot
@@ -131,7 +130,7 @@ class DualfoilTestCase(unittest.TestCase):
             # decimal place in output
             self.assertAlmostEqual(o1.potential[i], o2.potential[i],
                                    delta=1e-5)
-            self.assertAlmostEqual(o1.curr[i], o2.curr[i])
+            self.assertAlmostEqual(o1.current[i], o2.current[i])
 
 if __name__ == '__main__':
     unittest.main()
