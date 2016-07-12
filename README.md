@@ -34,6 +34,13 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  ```
 
  6. We use a Jupyter Notebook as our interface; To get there, open up a browser and type in the ip address of your machine into the web address bar.
+An easy way to find your ip address is through docker-machine:
+
+ ```
+ docker-machine ip
+ ```
+
+ Once you have opened into the Jupyter notebook, you will have access to pycap as well as all the code included in this repository.
 
 
 ## Basic Use
