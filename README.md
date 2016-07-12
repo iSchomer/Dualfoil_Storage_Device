@@ -21,26 +21,16 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  git clone https://github.com/iSchomer/Dualfoil_Storage_Device.git
  ```
 
- 4. This should download a `Dualfoil_Storage_Device` directory. Change into it:
-
- ```
- cd Dualfoil_Storage_Device/
- ```
-
+ 4. This should download a `Dualfoil_Storage_Device` directory. Change into it.
  5. Lastly, run a docker container with the pycap image:
 
  ```
  docker run --rm -it -p 8888:8888 -v $PWD:/notebooks dalg24/cap
  ```
 
- 6. We use a Jupyter Notebook as our interface; To get there, open up a browser and type in the ip address of your machine into the web address bar.
-An easy way to find your ip address is through docker-machine:
+ 6. Pycap and this code can be accessed by opening up a browser and going to `http://<ip_address>:8888` where `ip_address` is the IP address of the machine with the Docker daemon running.
 
- ```
- docker-machine ip
- ```
-
- Once you have opened into the Jupyter notebook, you will have access to pycap as well as all the code included in this repository.
+Once you have opened into the Jupyter notebook, you will have access to pycap as well as all the code included in this repository.
 
 
 ## Basic Use
