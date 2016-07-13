@@ -60,7 +60,7 @@ Once you have opened into the Jupyter notebook, you will have access to pycap as
  ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
  ptree.put_double('charge_voltage_limit', 4.6)
  # sim will hold end voltage until one of the end conditions are met:
- # 2 minutes of passed OR current falls below 5 amperes
+ # 2 minutes have passed OR current falls below 5 amperes
  ptree.put_bool('charge_voltage_finish', True)
  ptree.put_double('charge_voltage_finish_max_time', 120)
  ptree.put_double('charge_voltage_finish_current_limit', 5.0)
