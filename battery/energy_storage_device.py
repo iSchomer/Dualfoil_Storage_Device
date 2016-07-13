@@ -12,49 +12,47 @@ class Dualfoil(EnergyStorageDevice):
     
     Attributes
     ----------
+    inbot : InputManager
+        object that maintains input data
     outbot : OutputManager
         object that maintains output data
-    filePath : str
+    file_path : str
         Full or relative path to dualfoil files
-    fileName : str
+    file_name : str
         Name of the input file used by dualfoil
-    restart : bool
-        Indicates whether the next leg or simulation will be from a restart
     """
 
-    def __init__(self, Path='', Input='dualfoil5.in'):
+    def __init__(self, path=None, input_name='dualfoil5.in'):
         
         """
+        NOTE: Altough the `path` parameter is optional,
+              this variable must be included if dualfoil
+              files are not in the same directory.
+        
         Parameters
         ----------
-        Path : str, optional
+        path : str, optional
             Full or relative path to dualfoil files
-        Input : str, optional
+        input_name : str, optional
             Name of the input file used by dualfoil
         """
 
-        if not Path.endswith('/') and len(Path) != 0:
-            Path += '/'
-        self.filePath = Path
-        self.fileName = Input
-        self.restart = False
+        if path is not None:
+            if not path.endswith('/'):
+                path += '/'
+        self.file_path = path
+        self.inbot = df_manip.InputManager(path, input_name)
+        self.outbot = df_manip.OutputManager(path)
 
-        self.outbot = df_manip.OutputManager(path=self.filePath)
-
-        # compile dualfoil
-        if self.filePath == '':
-            subprocess.call('make clean && make dualfoil', shell=True)
-        else:
-            subprocess.call('cd %s && make clean && make dualfoil'
-                            % self.filePath, shell=True)
+        self.fileName = input_name
 
     # use when wanting to start a new simulation from scratch
     def reset(self):
         """
-        Resets restart value
+        Resets input and output managers
         Clears all output data lists
         """
-        self.restart = False
+        self.inbot.reset()
         self.outbot.reset()
 
     def run(self):
@@ -62,28 +60,14 @@ class Dualfoil(EnergyStorageDevice):
         Runs dualfoil and updates `restart` value accordingly
         """
 
-        #update restart value
-        if not self.restart:
-            self.restart = True
+        cmd = './dualfoil'
 
-        if self.filePath == '':
-            subprocess.call('./dualfoil', shell=True)
+        if self.file_path is None:
+            directory = None
         else:
-            subprocess.call('cd %s && ./dualfoil' % self.filePath, shell=True)
-
-    def set_filepath(self, path):
-        """
-        assigns the parameter to `filePath`
-        
-        Parameters
-        ----------
-        path : str
-            Full or relative path to dualfoil files
-        """
-        if not path.endswith('/'):
-            path += '/'
-        self.filePath = path
-        self.outbot.set_filepath(self.filePath)
+            directory = self.file_path
+        # call subprocess, hiding error stream from user
+        subprocess.call(cmd, cwd=directory, stderr=subprocess.PIPE)
 
     def get_voltage(self):
         v = self.outbot.get_voltage()
@@ -104,23 +88,6 @@ class Dualfoil(EnergyStorageDevice):
             self.reset()
         return c
 
-    def get_total_time(self):
-        """
-        Get the total dualfoil simulation runtime
-        
-        Returns
-        -------
-        float
-            the total time in minutes
-        """
-        rstFile = open('%sdf_restart.dat' % self.filePath, 'r')
-        tmp = rstFile.readline()
-        tmp = tmp.lstrip().split()
-        # get timestep in minutes
-        ts = float(tmp[1]) / 60
-        rstFile.close()
-        return ts
-
     def get_time_step(self):
         """
         Get the dualfoil's last-used time step value
@@ -128,13 +95,13 @@ class Dualfoil(EnergyStorageDevice):
         Returns
         -------
         float
-            time step in minutes
+            time step in seconds
         """
-        rstFile = open('%sdf_restart.dat' % self.filePath, 'r')
+        rstFile = open('%sdf_restart.dat' % self.file_path, 'r')
         tmp = rstFile.readline()
         tmp = tmp.lstrip().split()
-        # get timestep in minutes
-        ts = float(tmp[0]) / 60
+        # get timestep in seconds
+        ts = float(tmp[0])
         rstFile.close()
         return ts
 
@@ -146,31 +113,51 @@ class Dualfoil(EnergyStorageDevice):
         current = -current
 
         time_step = time_step / 60
-        df_manip.add_new_leg(current, time_step, 1, "constant current",
-                             path=self.filePath, restart=self.restart)
-        self.run()
-        self.outbot.update_output()
+        try:
+            self.inbot.add_new_leg(current, time_step, 1, "constant current")
+            self.run()
+            self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_constant_voltage(self, time_step, voltage):
         time_step = time_step / 60
-        df_manip.add_new_leg(voltage, time_step, 0, "constant voltage",
-                             path=self.filePath, restart=self.restart)
-        self.run()
-        self.outbot.update_output()
+        try:
+            self.inbot.add_new_leg(voltage, time_step, 0, "constant voltage")
+            self.run()
+            self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_constant_power(self, time_step, power):
         time_step = time_step / 60
-        df_manip.add_new_leg(power, time_step, -2, "constant power",
-                             path=self.filePath, restart=self.restart)
-        self.run()
-        self.outbot.update_output()
+        try:
+            self.inbot.add_new_leg(power, time_step, -2, "constant power")
+            self.run()
+            self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_constant_load(self, time_step, load):
         time_step = time_step / 60
-        df_manip.add_new_leg(load, time_step, -3, "constant load",
-                             path=self.filePath, restart=self.restart)
-        self.run()
-        self.outbot.update_output()
+        try:
+            self.inbot.add_new_leg(load, time_step, -3, "constant load")
+            self.run()
+            self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_to_voltage_constant_current(self, current, cutoff):
         """
@@ -187,10 +174,15 @@ class Dualfoil(EnergyStorageDevice):
         # dualfoil currents: + for discharge, - for charge
         current = -current
 
-        df_manip.add_new_leg(current, cutoff, 2, "constant current",
-                             path=self.filePath, restart=self.restart)
-        self.run()
-        self.outbot.update_output()
+        try:
+            self.inbot.add_new_leg(current, cutoff, 2, "constant current")
+            self.run()
+            self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_linear_current(self, time_step, current,
                                             divisor=10):
@@ -212,23 +204,29 @@ class Dualfoil(EnergyStorageDevice):
         current = -current
 
         time_step = time_step / 60
-        if self.restart:
-            linCurr = self.get_current()
+        total_time = time_step
+        if self.inbot.from_restart:
+            linear_current = self.get_current()
         else:
-            linCurr = 0.0
-        ts = time_step / (divisor+1)
-        ttot = ts
-        change = (current-linCurr) / divisor
+            linear_current = 0.0
+        time_step = time_step / (divisor+1)
+        run_time = time_step
+        change = (current-linear_current) / divisor
         
-
-        while ttot <= time_step:
-            df_manip.add_new_leg(linCurr, ts, 1, "linear current",
-                                 path=self.filePath, restart=self.restart)
-            # get next timestep values
-            ttot += ts
-            linCurr += change
-            self.run()
-            self.outbot.update_output()
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_current, time_step, 1,
+                                       "linear current")
+                # get next timestep values and run
+                run_time += time_step
+                linear_current += change
+                self.run()
+                self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_linear_voltage(self, time_step, voltage,
                                             divisor=10):
@@ -246,19 +244,26 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the voltage increase
         """
         time_step = time_step / 60
-        linearV = self.get_voltage()
-        ts = time_step / (divisor+1)
-        tott = ts
-        change = (voltage-linearV) / divisor
+        total_time = time_step
+        linear_voltage = self.get_voltage()
+        time_step = time_step / (divisor+1)
+        run_time = time_step
+        change = (voltage-linear_voltage) / divisor
 
-        while tott <= time_step:
-            df_manip.add_new_leg(linearV, ts, 0, "linear voltage",
-                                 path=self.filePath, restart=self.restart)
-            # get next timestep values
-            tott += ts
-            linearV += change
-            self.run()
-            self.outbot.update_output()
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_voltage, time_step, 0,
+                                       "linear voltage")
+                # get next timestep values and run
+                run_time += time_step
+                linear_voltage += change
+                self.run()
+                self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     # start_point parameter added to the following 2 functions
     # because they cannot be extracted
@@ -280,19 +285,26 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the power increase
         """
         time_step = time_step / 60
-        ts = time_step / (divisor+1)
-        tott = ts
+        total_time = time_step
+        time_step = time_step / (divisor+1)
+        run_time = time_step
         change = (power-start_point) / divisor
-        linPow = start_point
+        linear_power = start_point
 
-        while tott <= time_step:
-            df_manip.add_new_leg(linPow, ts, -2, "linear power",
-                                 path=self.filePath, restart=self.restart)
-            # get next timestep values
-            tott += ts
-            linPow += change
-            self.run()
-            self.outbot.update_output()
+        
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_power, time_step, -2, "linear power")
+                # get next timestep values and run
+                run_time += time_step
+                linear_power += change
+                self.run()
+                self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_linear_load(self, time_step, load,
                                          start_point=0.0, divisor=10):
@@ -312,16 +324,23 @@ class Dualfoil(EnergyStorageDevice):
             the number of substeps to be taken to create the current increase
         """
         time_step = time_step / 60
-        ts = time_step / (divisor+1)
-        tott = ts
+        total_time = time_step
+        time_step = time_step / (divisor+1)
+        run_time = time_step
         change = (load-start_point) / divisor
-        linLoad = start_point
+        linear_load = start_point
 
-        while tott <= time_step:
-            df_manip.add_new_leg(linLoad, ts, -3, "linear load",
-                                 path=self.filePath, restart=self.restart)
-            # get next timestep values
-            tott += ts
-            linLoad += change
-            self.run()
-            self.outbot.update_output()
+        
+        try:
+            while run_time <= total_time:
+                self.inbot.add_new_leg(linear_load, time_step, -3, "linear load")
+                # get next timestep values and run
+                run_time += time_step
+                linear_load += change
+                self.run()
+                self.outbot.update_output()
+        except FileNotFoundError as err:
+            # handles incorrect path
+            err = str(err)
+            err = err.split('] ')[-1]
+            print("Error when executing dualfoil: ", err)
