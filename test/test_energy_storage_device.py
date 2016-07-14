@@ -6,7 +6,7 @@ from pycap import PropertyTree, Charge
 
 import unittest
 
-path = '/notebooks/docker/'    
+path = '/notebooks/docker/'
 
 class DualfoilTestCase(unittest.TestCase):
     def test_consistency_constant_evolve_functions(self):
