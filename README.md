@@ -1,5 +1,5 @@
 # Dualfoil Battery Simulation Device
-See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORNL-CEES/Cap") for the bigger picture
+See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORNL-CEES/Cap") for the bigger picture.
 
 ## Included in this repository ...
  +  a quick guide to understanding Dualfoil5 
@@ -20,21 +20,22 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  git clone https://github.com/iSchomer/Dualfoil_Storage_Device.git
  ```
 
- 3. This should download a `Dualfoil_Storage_Device` directory. Change into it.
- 4. Lastly, run a docker container with the pycap image:
+ 3. This should download a `Dualfoil_Storage_Device` directory. Follow this and change into the `docker` directory.
+ 4. Make clean, and then use the command 'make dualfoil' to ensure that the program compiles on your system.
+ 5. Lastly, run a docker container with the pycap image:
 
  ```
  docker run --rm -it -p 8888:8888 -v $PWD:/notebooks dalg24/cap
  ```
 
- 5. Pycap and this code can be accessed by opening up a browser and going to `http://<ip_address>:8888` where `ip_address` is the IP address of the machine with the Docker daemon running.
+ 6. Pycap and this code can be accessed by opening up a browser and going to `http://<ip_address>:8888` where `ip_address` is the IP address of the machine with the Docker daemon running.
 
 Once you have opened into the Jupyter notebook, you will have access to pycap as well as all the code included in this repository.
 
 
 ## Basic Use
- + Dualfoil is an instance of pycap.EnergyStorageDevice
- + `Dualfoil` can run individual legs of a simulation, return output values, and graph those values in 3D
+ + Dualfoil is an instance of pycap.EnergyStorageDevice.
+ + `Dualfoil` can run individual legs of a simulation, return output values, and graph those values in 3D.
  + For more complicated simulations, a `Dualfoil` object can be passed into one of Pycap's experiments, such as `CyclicChargeDischarge`
 
  Here is an example of some basic operations:
