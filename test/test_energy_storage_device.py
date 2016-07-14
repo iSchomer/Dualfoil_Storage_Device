@@ -9,7 +9,7 @@ import unittest
 path = '/notebooks/docker/'    
 
 class DualfoilTestCase(unittest.TestCase):
-    def consistency_constant_evolve_functions(self):
+    def test_consistency_constant_evolve_functions(self):
         df = Dualfoil(path=path)
 
         # determine that what we want is what we get
@@ -48,7 +48,7 @@ class DualfoilTestCase(unittest.TestCase):
                                delta=1e-4)
         df.reset()
 
-    def consistency_linear_evolve_functions(self):
+    def test_consistency_linear_evolve_functions(self):
         df = Dualfoil(path=path)
 
         # affirm total time and final dependent value
@@ -84,7 +84,7 @@ class DualfoilTestCase(unittest.TestCase):
         self.assertAlmostEqual(load, Lfin, delta=0.5)
         df.reset()
         
-    def consistency_pycap_simulation(self):
+    def test_consistency_pycap_simulation(self):
         # 
         # weak run test; simply ensures that Dualfoil object
         # can be run with pycap.Charge
