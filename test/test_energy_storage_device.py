@@ -191,24 +191,13 @@ class DualfoilTestCase(unittest.TestCase):
         # combined output lists
         output = []
         for i in range(len(o1.time)):
-            tuple = (o1.time[i], o1.current[i], o1.potential[i])
-            output.append(tuple)
+            tup = (o1.time[i], o1.current[i], o1.potential[i])
+            output.append(tup)
         for i in range(len(o1.time)):
-            tuple = (o2.time[i], o2.current[i], o2.potential[i])
-            output.append(tuple)
+            tup = (o2.time[i], o2.current[i], o2.potential[i])
+            output.append(tup)
         # sort the output based on time values
         output = sorted(output, key=lambda output: output[0])
-        # Delete any identical tuples from the list
-        # These would be where the two simulations aligned.
-        # Not relevant to this test; consistency test affirms
-        # that identical time stamps will produce identical output
-        j = 0
-        while j < len(output)-2:
-            if (output[j][0] == output[j+1][0] and
-                output[j][1] == output[j+1][1] and
-                output[j][2] == output[j+1][2]):
-                output.pop(j)
-            j = j + 1
 
         # find start point; first 20 seconds are identical time stamps;
         # skip these to avoid errors from incorrect sorting
