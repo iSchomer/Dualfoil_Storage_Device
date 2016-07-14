@@ -21,7 +21,7 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  ```
 
  3. This should download a `Dualfoil_Storage_Device` directory. Follow this and change into the `docker` directory.
- 4. Make clean, and then use the command 'make dualfoil' to ensure that the program compiles on your system.
+ 4. Make clean, and then use the command `make dualfoil` to ensure that the program compiles on your system.
  5. Lastly, run a docker container with the pycap image:
 
  ```
