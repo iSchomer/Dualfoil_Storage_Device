@@ -30,8 +30,17 @@ class DualfoilTestCase(unittest.TestCase):
                                dt)
         df.reset()
         P = 15.0  # watts/m2
-        error = 1e-2  # represents leniency of error caused
-                      # by dualfoil, not the code being tested
+
+        # BELOW: represents leniency of error caused by
+        # dualfoil, not the code being tested.
+        # REASON FOR ERROR: Since dualfoil does not
+        #   calculate power, it is calculated with current
+        #   and voltage. Current is rounded off to the
+        #   nearest hundreths in dualfoil, so the final 
+        #   product between voltage and current will be off 
+        #   by about that much.
+        error = 1e-2 
+
         df.evolve_one_time_step_constant_power(dt, P)
         # Sign of current only indicates direction of flow
         # No such thing as negative power; use abs val
@@ -51,7 +60,8 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
         Vcut = 4.3    # cutoff voltage
         C = -10.0     # current (discharge)
-        error = 1e-4  # this dualfoil simulation is more accurate
+        error = 1e-4  # voltage has roundoff error after
+                      #   the fourth decimal place
         df.evolve_to_voltage_constant_current(C, Vcut)
         self.assertAlmostEqual(df.get_voltage(), Vcut,
                                delta=error)
@@ -78,11 +88,15 @@ class DualfoilTestCase(unittest.TestCase):
         df.evolve_one_time_step_linear_power(dt, p_fin,
                                              divisor=div,
                                              start_point=8.0)
-        # since power is not reported by dualfoil, must
-        # calculate with given values; leads to high error caused
-        # by significant roundoff when working with small currents;
-        # relax the error requirement
+
+        # BELOW: relaxing the error requirement
+        # REASON: Like above, power must be calculated with current
+        #   and voltage, which both have roundoff error. However, 
+        #   running a simulation with multiple retstarts likely
+        #   accumulates in roundoff errorsto account for a larger
+        #   error by comparison
         error = .05
+
         # power is positive
         power = abs(df.get_voltage() * df.get_current())
         self.assertAlmostEqual(power, p_fin, delta=error)
@@ -93,11 +107,13 @@ class DualfoilTestCase(unittest.TestCase):
         df.evolve_one_time_step_linear_load(dt, l_fin,
                                             divisor=div,
                                             start_point=8.0)
-        # load is positive
-        # same situation here as with power, but more significant
-        # when dividing by small current with roundoff
-        # relax the error requirement
+        
+        # Below: relax the error further
+        # REASON: same situation here as with power, but more
+        #   significant when dividing by current because the number
+        #   is small with proportionately large roundoff error
         error = 0.5
+        # load is positive
         load = abs(df.get_voltage() / df.get_current())
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
@@ -148,8 +164,10 @@ class DualfoilTestCase(unittest.TestCase):
         self.assertEqual(len(o1.time), len(o2.time))
         for i in range(len(o1.time)):
             self.assertAlmostEqual(o1.time[i], o2.time[i])
-            # relaxed delta because this is the last printed
-            # decimal place in output; avoids roundoff errors
+            # BELOW: relaxed delta for voltage
+            # REASON: dualfoil cuts off its voltages at 5
+            #   decimal places, meaning that this end-digit
+            #   is subject to roundoff errors
             error = 1e-5
             self.assertAlmostEqual(o1.potential[i], o2.potential[i],
                                    delta=error)
@@ -270,9 +288,10 @@ class DualfoilTestCase(unittest.TestCase):
                 # affirm that current is virtually the same
                 self.assertAlmostEqual(output['current'][i],
                                        output['current'][i-1])
-                # same with voltage, but delta is eased slightly
-                # because sorted() can't tell which entry came first
-                # from same time-stamp if from different simulations
+                # BELOW: delta is eased slightly
+                # REASON: `sorted()` can't tell which entry came
+                #   first from same time-stamp if from different
+                #   simulations; allow for this with error
                 error = 2e-5
                 self.assertAlmostEqual(output['voltage'][i],
                                        output['voltage'][i-1],
