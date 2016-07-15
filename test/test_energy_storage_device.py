@@ -92,8 +92,8 @@ class DualfoilTestCase(unittest.TestCase):
         # BELOW: relaxing the error requirement
         # REASON: Like above, power must be calculated with current
         #   and voltage, which both have roundoff error. However, 
-        #   running a simulation with multiple retstarts likely
-        #   accumulates in roundoff errorsto account for a larger
+        #   running a simulation with multiple restarts likely
+        #   accumulates in roundoff errors to account for a larger
         #   error by comparison
         error = .05
 
