@@ -3,6 +3,8 @@ sys.path.append('/notebooks')
 from battery import *
 from energy_storage_device import Dualfoil
 from pycap import PropertyTree, Charge
+from numpy import array as ar
+from numpy import argsort
 
 import unittest
 
@@ -17,7 +19,7 @@ class DualfoilTestCase(unittest.TestCase):
         dt = 1.0  # seconds
         I = 5.0   # current
         df.evolve_one_time_step_constant_current(dt, I)
-        self.assertAlmostEqual(df.get_current(), I*-1)
+        self.assertAlmostEqual(df.get_current(), I)
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
         df.reset()
@@ -28,24 +30,31 @@ class DualfoilTestCase(unittest.TestCase):
                                dt)
         df.reset()
         P = 15.0  # watts/m2
+        error = 1e-2  # represents leniency of error caused
+                      # by dualfoil, not the code being tested
         df.evolve_one_time_step_constant_power(dt, P)
-        power = df.get_voltage() * df.get_current()
+        # Sign of current only indicates direction of flow
+        # No such thing as negative power; use abs val
+        power = abs(df.get_voltage() * df.get_current())
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
-        self.assertAlmostEqual(power, P, delta=1e-2)
+        self.assertAlmostEqual(power, P, delta=error)
         df.reset()
         L = 0.7  # ohms-m2
         df.evolve_one_time_step_constant_load(dt, L)
-        load = df.get_voltage() / df.get_current()
+        # Sign of current only indicates direction of flow
+        # No such thing as negative load; use abs val
+        load = abs(df.get_voltage() / df.get_current())
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
-        self.assertAlmostEqual(load, L, delta=1e-2)
+        self.assertAlmostEqual(load, L, delta=error)
         df.reset()
-        Vcut = 4.3  # cutoff voltage
-        C = -10.0   # current (discharge)
+        Vcut = 4.3    # cutoff voltage
+        C = -10.0     # current (discharge)
+        error = 1e-4  # this dualfoil simulation is more accurate
         df.evolve_to_voltage_constant_current(C, Vcut)
         self.assertAlmostEqual(df.get_voltage(), Vcut,
-                               delta=1e-4)
+                               delta=error)
         df.reset()
 
     def test_consistency_linear_evolve_functions(self):
@@ -54,34 +63,45 @@ class DualfoilTestCase(unittest.TestCase):
         # affirm total time and final dependent value
         dt = 15.0  # seconds
         div = 4    # number of substeps
-        Cfin = -10.0  # final current (charge)
-        df.evolve_one_time_step_linear_current(dt, Cfin, div)
+        c_fin = -10.0  # final current (charge)
+        df.evolve_one_time_step_linear_current(dt, c_fin, div)
         self.assertAlmostEqual(df_manip.get_total_time(path), dt)
-        self.assertAlmostEqual(df.get_current(), Cfin*-1)
+        self.assertAlmostEqual(df.get_current(), c_fin)
         df.reset()
-        Vfin = 4.3  # final current (lower than initial)
-        df.evolve_one_time_step_linear_voltage(dt, Vfin, div)
+        v_fin = 4.3  # final current (lower than initial)
+        df.evolve_one_time_step_linear_voltage(dt, v_fin, div)
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
-        self.assertAlmostEqual(df.get_voltage(), Vfin)
+        self.assertAlmostEqual(df.get_voltage(), v_fin)
         df.reset()
-        Pfin = 16.0  # final power
-        df.evolve_one_time_step_linear_power(dt, Pfin,
+        p_fin = 16.0  # final power
+        df.evolve_one_time_step_linear_power(dt, p_fin,
                                              divisor=div,
                                              start_point=8.0)
-        power = df.get_voltage() * df.get_current()
-        self.assertAlmostEqual(power, Pfin, delta=.05)
+        # since power is not reported by dualfoil, must
+        # calculate with given values; leads to high error caused
+        # by significant roundoff when working with small currents;
+        # relax the error requirement
+        error = .05
+        # power is positive
+        power = abs(df.get_voltage() * df.get_current())
+        self.assertAlmostEqual(power, p_fin, delta=error)
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
         df.reset()
-        Lfin = 12.0  # final load
-        df.evolve_one_time_step_linear_load(dt, Lfin,
+        l_fin = 12.0  # final load
+        df.evolve_one_time_step_linear_load(dt, l_fin,
                                             divisor=div,
                                             start_point=8.0)
-        load = df.get_voltage() / df.get_current()
+        # load is positive
+        # same situation here as with power, but more significant
+        # when dividing by small current with roundoff
+        # relax the error requirement
+        error = 0.5
+        load = abs(df.get_voltage() / df.get_current())
         self.assertAlmostEqual(df_manip.get_total_time(path),
                                dt)
-        self.assertAlmostEqual(load, Lfin, delta=0.5)
+        self.assertAlmostEqual(load, l_fin, delta=error)
         df.reset()
         
     def test_consistency_pycap_simulation(self):
@@ -129,9 +149,10 @@ class DualfoilTestCase(unittest.TestCase):
         for i in range(len(o1.time)):
             self.assertAlmostEqual(o1.time[i], o2.time[i])
             # relaxed delta because this is the last printed
-            # decimal place in output
+            # decimal place in output; avoids roundoff errors
+            error = 1e-5
             self.assertAlmostEqual(o1.potential[i], o2.potential[i],
-                                   delta=1e-5)
+                                   delta=error)
             self.assertAlmostEqual(o1.current[i], o2.current[i])
 
     def test_accuracy_pycap_simulation(self):
@@ -174,9 +195,8 @@ class DualfoilTestCase(unittest.TestCase):
         const_current_const_voltage = Charge(ptree)
         const_current_const_voltage.run(df2)
 
-        o1 = df1.outbot
-        o2 = df2.outbot
-        o2.write_main_output()
+        o1 = df1.outbot         # contains sim1 output
+        o2 = df2.outbot         # contains sim2 output
 
         # affirm we make it this far and have usable data
         self.assertTrue(len(o1.time) > 0)
@@ -184,60 +204,105 @@ class DualfoilTestCase(unittest.TestCase):
         # lengths of data should be different
         self.assertFalse(len(o1.time) == len(o2.time))
 
-        # Create one combined list of tuples with form 
-        #         (time, current, voltage).
-        # Compare the consistency of the two simulation ouputs
-        # by checking smooth changes within the curves of the 
-        # combined output lists
-        output = []
-        for i in range(len(o1.time)):
-            tup = (o1.time[i], o1.current[i], o1.potential[i])
-            output.append(tup)
-        for i in range(len(o1.time)):
-            tup = (o2.time[i], o2.current[i], o2.potential[i])
-            output.append(tup)
-        # sort the output based on time values
-        output = sorted(output, key=lambda output: output[0])
+        # TEST LOGIC:
+        #  -Merge the two outputs into one, sorted by
+        #   increasing time stamps.
+        #  -Compare the consistency of the two simulations
+        #   by checking for smooth changes within the curves
+        #   of the combined output lists
+        o1.time.extend(o2.time)
+        time = ar(o1.time)  # nparray
+        o1.potential.extend(o2.potential)
+        voltage = ar(o1.potential)  # nparray
+        o1.current.extend(o2.current)
+        current = ar(o1.current)  # np array
+        # create a dictionary with the combined output lists
+        output = {'time': time,
+                  'voltage': voltage,
+                  'current': current
+                 }
+        # sort based on time, keeping the three types aligned
+        key = argsort(output['time'])
+        # for using the key to sort the list
+        tmp = {'time': [], 'voltage': [], 'current': []}
+        for i in key:
+            tmp['time'].append(output['time'][i])
+            tmp['voltage'].append(output['voltage'][i])
+            tmp['current'].append(output['current'][i])
+        # reassign ordered set to `output` as nparrays
+        output['time'] = ar(tmp['time'])
+        output['voltage'] = ar(tmp['voltage'])
+        output['current'] = ar(tmp['current'])
 
-        # find start point; first 20 seconds are identical time stamps;
-        # skip these to avoid errors from incorrect sorting
-        index = 0
-        while output[index][0] < (1/3):  # 20 seconds
-            index = index + 1
-        limit = len(output)-2
+        # BELOW: first 20 seconds are identical time stamps;
+        #     skip these to avoid errors from incorrect sorting
+        # REASON FOR ERROR: Dualfoil only prints time data as 
+        #     precice as minutes to three decimal places. So when
+        #     the following is generated....
+        #       Manual Run         |       Pycap Simulation
+        #  (min)     (V)     (amp) |  (min)     (V)     (amp)
+        #  .001   4.52345    10.0  |  .001   4.52345    10.0
+        #  .001   4.52349    10.0  |  .001   4.52349    10.0
+        #           ...                       ...
+        #     ...python's `sorted()` function has no way of 
+        #     distinguishing entries; it instead returns this:
+        # [ 
+        #   (.001, 4.52345, 10.0),
+        #   (.001, 4.52349, 10.0),  <- these two should
+        #   (.001, 4.52345, 10.0),  <-   be switched
+        #   (.001, 4.52349, 10.0)
+        # ] 
+        # SOLUTION: consistency test affirms that the exact same
+        #     time step will produce same current and voltage, so
+        #     skip ahead to first instance where time stamps will 
+        #     be out of alignment
+        i = 0
+        while output['time'][i] < (1/3):  # 20 seconds
+            i = i + 1
+        index_limit = len(output['time'])-1  
         
         # go through and affirm smoothness of curve
-        while index < limit:
-            # if time values are the same
-            if output[index][0] == output[index-1][0]:
+        while i < index_limit:
+            # Check if time values are the same to 3 decimal places.
+            # If so, current and voltage are not guarunteed 
+            #   to also be exactly the same, but should be close
+            if output['time'][i] == output['time'][i-1]:
                 # affirm that current is virtually the same
-                self.assertAlmostEqual(output[index][1],
-                                       output[index-1][1])
+                self.assertAlmostEqual(output['current'][i],
+                                       output['current'][i-1])
                 # same with voltage, but delta is eased slightly
                 # because sorted() can't tell which entry came first
                 # from same time-stamp if from different simulations
-                self.assertAlmostEqual(output[index][2],
-                                       output[index-1][2],
-                                       delta = 2e-5)
-            else:  # time values are different
-                if output[index][0] <= 4.0:  # part 1, const currrent
+                error = 2e-5
+                self.assertAlmostEqual(output['voltage'][i],
+                                       output['voltage'][i-1],
+                                       delta=error)
+            else:  
+                # Time values are different
+                # Check to affirm that the variable NOT being held 
+                # constant is steadily increasing / decreasing
+
+                # First part happens in first 4 minutes
+                if output['time'][i] <= 4.0:  # part 1, const currrent
                     # current should be equal
-                    self.assertEqual(output[index-1][1],
-                                     output[index][1])
+                    self.assertEqual(output['current'][i],
+                                     output['current'][i-1])
                     # voltage should not have decreased
-                    self.assertTrue(output[index][2] >=
-                                    output[index-1][2])
+                    self.assertTrue(output['voltage'][i] >=
+                                    output['voltage'][i-1])
                 else:  # part 2, const voltage                
-                    # current should be increasing or staying the same
-                    self.assertTrue(output[index][1] >=
-                                    output[index-1][1])
+                    # current should be decreasing or staying the same
+                    self.assertTrue(output['current'][i] <=
+                                    output['current'][i-1])
                     # voltage should decrease, then stay at 4.54
-                    if output[index-1][2] == 4.54:
-                        self.assertEqual(output[index-1][2], output[index][2])
+                    if output['voltage'][i-1] == 4.54:
+                        self.assertEqual(output['voltage'][i],
+                                         output['voltage'][i-1])
                     else:
-                        self.assertTrue(output[index][2] <= output[index-1][2])
+                        self.assertTrue(output['voltage'][i] <=
+                                        output['voltage'][i-1])
             # update index
-            index = index + 1
+            i = i + 1
 
 if __name__ == '__main__':
     unittest.main()
