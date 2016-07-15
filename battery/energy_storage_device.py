@@ -73,8 +73,8 @@ class Dualfoil(EnergyStorageDevice):
         v = self.outbot.get_voltage()
         if v == -1:
             # no output
-            # run a 0 time simulation to get the starting voltage
-            self.evolve_one_time_step_constant_current(0, -20)
+            # run a 0 second simulation to get the starting voltage
+            self.evolve_one_time_step_constant_current(0, -5)
             v = self.outbot.get_voltage()
             self.reset()
         return v
@@ -82,7 +82,7 @@ class Dualfoil(EnergyStorageDevice):
     def get_current(self):
         c = self.outbot.get_current()
         if c == -1:
-            # run a 0 time sim to get initial current
+            # run a 0 second sim to get initial current
             self.evolve_one_time_step_constant_voltage(0, 0)
             c = self.outbot.get_current()
             self.reset()

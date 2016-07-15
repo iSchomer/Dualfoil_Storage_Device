@@ -237,7 +237,11 @@ def extract_main_output(file='dualfoil5.out', path=None):
         p_util.append(float(tmp[2]))
         potential.append(float(tmp[3]))
         uocp.append(float(tmp[4]))
-        current.append(float(tmp[5]))
+        # CURRENT EXPLAINED
+        # Dualfoil: + for discharge, - for charge
+        # Pycap:    - for discharge, + for charge
+        # multiply by -1 to account for this
+        current.append(float(tmp[5])*(-1))
         temperature.append(float(tmp[6]))
 
         # for 5.1 code
