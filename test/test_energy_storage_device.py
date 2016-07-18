@@ -187,11 +187,11 @@ class DualfoilTestCase(unittest.TestCase):
         # manual 
         # use InputManager to set the input file
         c = -10.0  # constant charge current
-        # charge for 4 minutes straight
-        im.add_new_leg(c, 5.2, 1)
+        # charge for 5 minutes straight
+        im.add_new_leg(c, 5, 1)
         df1.run()
         df1.outbot.update_output()
-        v = 4.54  # constant voltage
+        v = 4.539  # expected voltage after 5 minutes
         # hold constant voltage for 3 minutes straight
         im.add_new_leg(v, 3.0, 0)
         df1.run()
@@ -200,11 +200,11 @@ class DualfoilTestCase(unittest.TestCase):
         # pycap simulation
         # build a ptree input
         ptree = PropertyTree()
-        ptree.put_double('time_step', 24.0)  # 24 second time step
+        ptree.put_double('time_step', 30.0)  # 30 second time step
         ptree.put_string('charge_mode', 'constant_current')
         ptree.put_double('charge_current', 10.0)
         ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
-        ptree.put_double('charge_voltage_limit', 4.54)
+        ptree.put_double('charge_voltage_limit', v)
         ptree.put_bool('charge_voltage_finish', True)
         # hold end voltage after either 3 minutes have passed
         # OR current falls under 1 ampere
@@ -216,6 +216,7 @@ class DualfoilTestCase(unittest.TestCase):
 
         o1 = df1.outbot         # contains sim1 output
         o2 = df2.outbot         # contains sim2 output
+        o2.write_main_output()
 
         # affirm we make it this far and have usable data
         self.assertTrue(len(o1.time) > 0)
@@ -303,17 +304,16 @@ class DualfoilTestCase(unittest.TestCase):
                 # constant is steadily increasing / decreasing
 
                 # First part happens in first 4 minutes
-                if output['time'][i] <= 5.2:  # part 1, const currrent
+                if output['time'][i] <= 5.0:  # part 1, const currrent
                     # current should be equal
                     self.assertEqual(output['current'][i],
                                      output['current'][i-1])
                     # voltage should not have decreased
-                    self.assertTrue(output['voltage'][i] >=
-                                    output['voltage'][i-1],
-                                    msg=output['time'][i])
+                    self.assertTrue(output['voltage'][i],
+                                    output['voltage'][i-1])
                 else:  # part 2, const voltage                
                     # current should be getting less negative
-                    self.assertTrue(output['current'][i] <
+                    self.assertTrue(output['current'][i] <=
                                     output['current'][i-1])
                     # voltage should decrease, then stay at 4.54
                     if output['voltage'][i-1] == 4.54:
@@ -392,6 +392,41 @@ class DualfoilTestCase(unittest.TestCase):
         p_fin = abs(v_fin * c_fin)
         # affirm success
         self.assertAlmostEqual(p, p_fin, delta=error)
+
+    def test_impedance(self):
+        # test the impedance mode of dualfoil5.2
+        new_path = '/notebooks/docker/dualfoil5-2/'
+        df = Dualfoil(path=new_path, input_name='li-ion.in',
+                      restart_capable=False)
+        df.run_impedance()
+
+        # list variables for impedance mode
+        omega = []   # rad/s
+        z_real = []  # ohm*cm2
+        z_imag = []  # ohm*cm2
+
+        # extract the output, determine that data make sense
+        with open('%sdualfoil5.out' % new_path, 'r') as fout:
+            # read until the beginning of the data
+            line = fout.readline()
+            while line.find('(Rad/s)') == -1:
+                line = fout.readline()
+
+            # extract the output
+            while line != '':
+                if line.find(',') != -1:
+                    tmp = line.split(',')
+                    # indication of failure: entry is 'NaN'
+                    omega.append(float(tmp[0]))
+                    z_real.append(float(tmp[1]))
+                    z_imag.append(float(tmp[2]))
+                line = fout.readline()
+
+        # indication of failure: an entry that is not nonzero
+        for i in range(0, len(omega)-1):
+            self.assertNotEqual(omega[i], 0)
+            self.assertNotEqual(z_real[i], 0)
+            self.assertNotEqual(z_imag[i], 0)
 
 if __name__ == '__main__':
     unittest.main()

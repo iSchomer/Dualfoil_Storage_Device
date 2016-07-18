@@ -227,7 +227,7 @@ class InputManager:
                 if line.find('solid state diffusion') != -1:
                     # replace the number with 0 if it isn't already
                     tmp = line.split()
-                    if int(tmp[0]) != 0:
+                    if float(tmp[0]) != 0:
                         line = line.replace(str(tmp[0]), '0.0', 1)
                 # keep up new input 
                 new_input += line
