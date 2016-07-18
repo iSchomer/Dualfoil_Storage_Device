@@ -3,7 +3,6 @@ __all__ = ['Dualfoil']
 import subprocess
 from pycap import EnergyStorageDevice
 import df_manip
-import df_grapher
 
 class Dualfoil(EnergyStorageDevice):
 
@@ -22,7 +21,7 @@ class Dualfoil(EnergyStorageDevice):
         Name of the input file used by dualfoil
     """
 
-    def __init__(self, path=None, input_name='dualfoil5.in'):
+    def __init__(self, path=None, input_name='dualfoil5.in', restart_capable=True):
         
         """
         NOTE: Altough the `path` parameter is optional,
@@ -35,16 +34,20 @@ class Dualfoil(EnergyStorageDevice):
             Full or relative path to dualfoil files
         input_name : str, optional
             Name of the input file used by dualfoil
+        restart_capable : bool, optional
+            Indicates whether user wants to use dualfoil 5.1
+            (capable of performing restarts) or 5.2 (incapable of restarts)
         """
 
         if path is not None:
             if not path.endswith('/'):
                 path += '/'
         self.file_path = path
-        self.inbot = df_manip.InputManager(path, input_name)
+        self.inbot = df_manip.InputManager(path, input_name, restart_capable)
         self.outbot = df_manip.OutputManager(path)
 
         self.fileName = input_name
+        self.restart_capable = restart_capable
 
     # use when wanting to start a new simulation from scratch
     def reset(self):
@@ -57,7 +60,8 @@ class Dualfoil(EnergyStorageDevice):
 
     def run(self):
         """
-        Runs dualfoil and updates `restart` value accordingly
+        Runs dualfoil standard simulation and updates `restart`
+        value accordingly.
         """
 
         cmd = './dualfoil'
@@ -68,6 +72,19 @@ class Dualfoil(EnergyStorageDevice):
             directory = self.file_path
         # call subprocess, hiding error stream from user
         subprocess.call(cmd, cwd=directory, stderr=subprocess.PIPE)
+
+    def run_impedance(self):
+        """
+        Runs dualfoil with an impedance mode.
+        """
+        # make sure dualfoil5.2 is being used
+        if self.restart_capable:
+            print('This feature is only compatible with dualfoil5.2')
+            return
+
+        # change input file to run impedance mode
+        self.inbot.add_impedance()
+        self.run()
 
     def get_voltage(self):
         v = self.outbot.get_voltage()
@@ -95,8 +112,13 @@ class Dualfoil(EnergyStorageDevice):
         Returns
         -------
         float
-            time step in seconds
+            time step in seconds (-1 if not applicable)
         """
+        # this feature is only for 5.1
+        if not self.restart_capable:
+            print('This feature is only compatable with dualfoil5.1')
+            return -1
+
         rstFile = open('%sdf_restart.dat' % self.file_path, 'r')
         tmp = rstFile.readline()
         tmp = tmp.lstrip().split()
@@ -189,7 +211,9 @@ class Dualfoil(EnergyStorageDevice):
         """
         Impose a linearly increasing current by dividing into substeps
         of constant current, and evolve in time.
-        
+
+        Only applicable to dualfoil5.1
+
         Parameters
         ----------
         time_step : float
@@ -199,6 +223,11 @@ class Dualfoil(EnergyStorageDevice):
         divisor : int, optional
             the number of substeps to be taken to create the current increase
         """
+        # make sure we have the correct dualfoil
+        if not self.restart_capable:
+            print('This simulation option is only available for dualfoil5.1')
+            return
+
         # pycap currents: - for discharge, + for charge
         # dualfoil currents: + for discharge, - for charge
         current = -current
@@ -233,7 +262,9 @@ class Dualfoil(EnergyStorageDevice):
         """
         Impose a linearly increasing voltage by dividing into substeps
         of constant voltage, and evolve in time.
-        
+
+        Only applicable to dualfoil5.1
+
         Parameters
         ----------
         time_step : float
@@ -243,6 +274,11 @@ class Dualfoil(EnergyStorageDevice):
         divisor : int, optional
             the number of substeps to be taken to create the voltage increase
         """
+        # make sure we have the correct dualfoil
+        if not self.restart_capable:
+            print('This simulation option is only available for dualfoil5.1')
+            return
+
         time_step = time_step / 60
         total_time = time_step
         linear_voltage = self.get_voltage()
@@ -272,7 +308,9 @@ class Dualfoil(EnergyStorageDevice):
         """
         Impose a linearly increasing power by dividing into substeps
         of constant power, and evolve in time.
-        
+
+        Only applicable to dualfoil5.1
+
         Parameters
         ----------
         time_step : float
@@ -284,6 +322,11 @@ class Dualfoil(EnergyStorageDevice):
         divisor : int, optional
             the number of substeps to be taken to create the power increase
         """
+        # make sure we have the correct dualfoil
+        if not self.restart_capable:
+            print('This simulation option is only available for dualfoil5.1')
+            return
+
         time_step = time_step / 60
         total_time = time_step
         time_step = time_step / (divisor+1)
@@ -311,7 +354,9 @@ class Dualfoil(EnergyStorageDevice):
         """
         Impose a linearly increasing load by dividing into substeps
         of constant load, and evolve in time.
-        
+
+        Only applicable to dualfoil5.1
+
         Parameters
         ----------
         time_step : float
@@ -323,6 +368,11 @@ class Dualfoil(EnergyStorageDevice):
         divisor : int, optional
             the number of substeps to be taken to create the current increase
         """
+        # make sure we have the correct dualfoil
+        if not self.restart_capable:
+            print('This simulation option is only available for dualfoil5.1')
+            return
+
         time_step = time_step / 60
         total_time = time_step
         time_step = time_step / (divisor+1)
