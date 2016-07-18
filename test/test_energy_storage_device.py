@@ -8,7 +8,8 @@ from numpy import argsort
 
 import unittest
 
-path = '/notebooks/docker/'
+path = '/notebooks/docker/dualfoil5-1/'   # 5.1
+path2 = '/notebooks/docker/dualfoil5-2/'  # 5.2
 
 class DualfoilTestCase(unittest.TestCase):
     def test_consistency_constant_evolve_functions(self):
@@ -328,8 +329,7 @@ class DualfoilTestCase(unittest.TestCase):
     def test_compatibilty_other_dualfoil(self):
         # PURPOSE: test to see if Dualfoil object works with the
         #   version of dualfoil without restard (5.2)
-        new_path = '/notebooks/docker/dualfoil5-2/'
-        df = Dualfoil(path=new_path, input_name='li-ion.in',
+        df = Dualfoil(path=path2, input_name='li-ion.in',
                       restart_capable=False)
 
         # Go through evolve tests. Affirm the following:
@@ -395,8 +395,7 @@ class DualfoilTestCase(unittest.TestCase):
 
     def test_impedance(self):
         # test the impedance mode of dualfoil5.2
-        new_path = '/notebooks/docker/dualfoil5-2/'
-        df = Dualfoil(path=new_path, input_name='li-ion.in',
+        df = Dualfoil(path=path2, input_name='li-ion.in',
                       restart_capable=False)
         df.run_impedance()
 
@@ -406,7 +405,7 @@ class DualfoilTestCase(unittest.TestCase):
         z_imag = []  # ohm*cm2
 
         # extract the output, determine that data make sense
-        with open('%sdualfoil5.out' % new_path, 'r') as fout:
+        with open('%sdualfoil5.out' % path2, 'r') as fout:
             # read until the beginning of the data
             line = fout.readline()
             while line.find('(Rad/s)') == -1:

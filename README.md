@@ -20,11 +20,13 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  $ git clone https://github.com/iSchomer/Dualfoil_Storage_Device.git
  ```
 
- 3. This should download a `Dualfoil_Storage_Device` directory. Make the dualfoil executable file:
+ 3. This should download a `Dualfoil_Storage_Device` directory. Make the dualfoil executable files:
 
  ```
- $ cd Dualfoil_Storage_Device/docker
+ $ cd Dualfoil_Storage_Device/docker/dualfoil5-1
  $ make dualfoil
+ $ cd ../dualfoil5-2
+ $ make
  ```
 
  4. Lastly, run a Docker container with the pycap image:
@@ -45,12 +47,16 @@ Once you have opened into the Jupyter notebook, you will have access to pycap as
 
  Here is an example of some basic operations:
  ```python
+ # add battery module to path
+ import sys
+ sys.path.append('/notebooks')
+
  from pycap import PropertyTree, Charge
  from battery import *
  fom energy_storage_device import Dualfoil
 
  # can run dualfoil sim manually 
- device = Dualfoil(path='docker/')
+ device = Dualfoil(path='docker/dualfoil5-1')
  print(device.get_voltage())
  # charge for 1 minute with a constant current of 10 amperes
  device.evolve_one_time_step_constant_current(60, 10.0)
