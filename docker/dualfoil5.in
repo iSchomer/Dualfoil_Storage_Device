@@ -1,4 +1,4 @@
-.true.   ! restart, set to true when this is a restart
+.false.   ! restart, set to true when this is a restart
 250        ! lim,  limit on number of iterations
 96.0d-06  ! h1,   thickness of negative electrode (m)
 25.0d-06   ! h2,   thickness of separator (m)
@@ -16,7 +16,7 @@
 2000.0    ! xi(1,1), initial salt concentration (mol/m3), 
 0.5635       ! x,    initial stoichiometric parameter for neg. (ignored if n1=0)
 0.1705       ! y,    initial stoichiometric parameter for pos.
-4.0d0   ! tmmax, maximum time step size (s)
+5.0d0   ! tmmax, maximum time step size (s)
 7.0d-14   ! dfs1, diffusion coef. in negative solid (m2/s) 
 3.0d-14   ! dfs3, diffusion coef. in positive solid (m2/s) 
 8.0d-6    ! Rad1, radius of negative particles (m) (ignored in Foil mode) 
@@ -48,7 +48,7 @@
 500.0d0  ! Cp,   heat capacity of system (J/kg-K)
 298.15d0    ! Tam,  ambient air temperature (K)
 1         ! ncell, number of cells in a cell stack    
-1         ! lht,  0 uses htc,  1 calcs htc,  2 isothermal
+0         ! lht,  0 uses htc,  1 calcs htc,  2 isothermal
 1         ! il1,  1 for long print-out  0 for short print-out
 1         ! il2,  prints every il2 th node in long print-out
 1         ! il3,  prints every il3 th time step in long print-out
@@ -67,7 +67,7 @@
 2         ! nprop, see below
 1         ! npos,  see below
 1       ! lcurs, number of current changes
-4.6 35.5 0 0.0001 12.0 !
+-10.0 1.0 1 0.001 14.0 !constant current
 
 	EXPLANATIONS
 

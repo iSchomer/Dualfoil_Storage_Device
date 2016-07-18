@@ -11,7 +11,7 @@ import unittest
 path = '/notebooks/docker/'
 
 class DualfoilTestCase(unittest.TestCase):
-    def consistency_constant_evolve_functions(self):
+    def test_consistency_constant_evolve_functions(self):
         df = Dualfoil(path=path)
 
         # determine that what we want is what we get
@@ -58,8 +58,8 @@ class DualfoilTestCase(unittest.TestCase):
                                dt)
         self.assertAlmostEqual(load, L, delta=error)
         df.reset()
-        Vcut = 4.3    # cutoff voltage
-        C = -10.0     # current (discharge)
+        Vcut = 4.53   # cutoff voltage
+        C = 10.0      # current (charge)
         error = 1e-4  # voltage has roundoff error after
                       #   the fourth decimal place
         df.evolve_to_voltage_constant_current(C, Vcut)
@@ -67,7 +67,7 @@ class DualfoilTestCase(unittest.TestCase):
                                delta=error)
         df.reset()
 
-    def consistency_linear_evolve_functions(self):
+    def test_consistency_linear_evolve_functions(self):
         df = Dualfoil(path=path)
 
         # affirm total time and final dependent value
@@ -120,7 +120,7 @@ class DualfoilTestCase(unittest.TestCase):
         self.assertAlmostEqual(load, l_fin, delta=error)
         df.reset()
         
-    def consistency_pycap_simulation(self):
+    def test_consistency_pycap_simulation(self):
         # 
         # weak run test; simply ensures that Dualfoil object
         # can be run with pycap.Charge
@@ -132,7 +132,7 @@ class DualfoilTestCase(unittest.TestCase):
         # testing a charge-to-hold-const-voltage
         # manual 
         # use InputManager to set the input file
-        c = -10.0  # constant current
+        c = -12.0  # constant current
         im.add_new_leg(c, 5.0, 1)
         df1.run()
         df1.outbot.update_output()
@@ -146,7 +146,7 @@ class DualfoilTestCase(unittest.TestCase):
         ptree = PropertyTree()
         ptree.put_double('time_step', 300.0)  # 5 minutes
         ptree.put_string('charge_mode', 'constant_current')
-        ptree.put_double('charge_current', 10.0)
+        ptree.put_double('charge_current', 12.0)
         ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
         ptree.put_double('charge_voltage_limit', 4.54)
         ptree.put_bool('charge_voltage_finish', True)
@@ -161,6 +161,7 @@ class DualfoilTestCase(unittest.TestCase):
         # check the output lists of both devices
         o1 = df1.outbot
         o2 = df2.outbot
+        o2.write_main_output()
         self.assertEqual(len(o1.time), len(o2.time))
         for i in range(len(o1.time)):
             self.assertAlmostEqual(o1.time[i], o2.time[i])
@@ -187,10 +188,10 @@ class DualfoilTestCase(unittest.TestCase):
         # use InputManager to set the input file
         c = -10.0  # constant charge current
         # charge for 4 minutes straight
-        im.add_new_leg(c, 4.0, 1)
+        im.add_new_leg(c, 5.2, 1)
         df1.run()
         df1.outbot.update_output()
-        v = 4.539  # constant voltage
+        v = 4.54  # constant voltage
         # hold constant voltage for 3 minutes straight
         im.add_new_leg(v, 3.0, 0)
         df1.run()
@@ -199,11 +200,11 @@ class DualfoilTestCase(unittest.TestCase):
         # pycap simulation
         # build a ptree input
         ptree = PropertyTree()
-        ptree.put_double('time_step', 15.0)  # 15 second time step
+        ptree.put_double('time_step', 24.0)  # 24 second time step
         ptree.put_string('charge_mode', 'constant_current')
         ptree.put_double('charge_current', 10.0)
         ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
-        ptree.put_double('charge_voltage_limit', 4.539)
+        ptree.put_double('charge_voltage_limit', 4.54)
         ptree.put_bool('charge_voltage_finish', True)
         # hold end voltage after either 3 minutes have passed
         # OR current falls under 1 ampere
@@ -251,12 +252,6 @@ class DualfoilTestCase(unittest.TestCase):
         output['time'] = ar(tmp['time'])
         output['voltage'] = ar(tmp['voltage'])
         output['current'] = ar(tmp['current'])
-        with open('fuckme.txt', 'w') as fuck:
-            for i in range(0, len(output['time'])-1):
-                fuck.write(str(output['time'][i]) + ' ')
-                fuck.write(str(output['voltage'][i]) + ' ')
-                fuck.write(str(output['current'][i]) + '\n')
-                
 
         # BELOW: first 20 seconds are identical time stamps;
         #     skip these to avoid errors from incorrect sorting
@@ -281,7 +276,7 @@ class DualfoilTestCase(unittest.TestCase):
         #     skip ahead to first instance where time stamps will 
         #     be out of alignment
         i = 0
-        while output['time'][i] < 0.25:  # 15 seconds
+        while output['time'][i] <= 0.4:  # 24 seconds
             i = i + 1
         index_limit = len(output['time'])-1  
         
@@ -308,13 +303,14 @@ class DualfoilTestCase(unittest.TestCase):
                 # constant is steadily increasing / decreasing
 
                 # First part happens in first 4 minutes
-                if output['time'][i] <= 4.0:  # part 1, const currrent
+                if output['time'][i] <= 5.2:  # part 1, const currrent
                     # current should be equal
                     self.assertEqual(output['current'][i],
                                      output['current'][i-1])
-                    # voltage should not have increased
+                    # voltage should not have decreased
                     self.assertTrue(output['voltage'][i] >=
-                                    output['voltage'][i-1])
+                                    output['voltage'][i-1],
+                                    msg=output['time'][i])
                 else:  # part 2, const voltage                
                     # current should be getting less negative
                     self.assertTrue(output['current'][i] <
