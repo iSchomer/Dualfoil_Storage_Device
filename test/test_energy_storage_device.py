@@ -334,7 +334,8 @@ class DualfoilTestCase(unittest.TestCase):
 
         # Go through evolve tests. Affirm the following:
         #   1. Variable held constant stays constant
-        #   2. Dependent variable changes in an expected way
+        #   2. Dependent variable changes in an expected way, 
+        #          within an expected range based on sim time
 
         v = df.get_voltage()
         # make sure voltage works by ensuring it does not 
@@ -352,7 +353,10 @@ class DualfoilTestCase(unittest.TestCase):
         # current is constant
         self.assertEqual(c, c_fin)
         # charging means potential is increasing
-        self.assertTrue(v_fin > v)
+        # change greater than 5% increase would be unrealistic
+        #    for the given battery and sim time
+        percent_change = (v_fin - v) / v
+        self.assertTrue(0 < percent_change < 0.05)
 
         # 2. constant voltage
         df.reset()
@@ -362,8 +366,8 @@ class DualfoilTestCase(unittest.TestCase):
         v_fin = df.get_voltage()
         c_fin = df.get_current()
         # affirm success
-        # current should be negative and not zero
-        self.assertTrue(c_fin < 0)
+        # expected range: -10 amperes < current < 0 amperes
+        self.assertTrue(-10 < c_fin < 0)
         # voltage is constant
         self.assertEqual(v, v_fin)
 
@@ -371,6 +375,8 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
         load = 0.7  # ohms-m2
         df.evolve_one_time_step_constant_load(dt, load)
+        v = df.outbot.potential[0]
+        c = df.outbot.current[0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
         # load should be positive
@@ -379,19 +385,37 @@ class DualfoilTestCase(unittest.TestCase):
         # REASON: roundoff error of current and voltage
         # SOLUTION: create room for error with `error`
         error = 2e-2
-        # affirm success
         self.assertAlmostEqual(load, load_fin, delta=error)
+        # voltage should have decreased as a result of maintaining
+        #     load. Check within 5% change
+        percent_change = (v - v_fin) / v
+        self.assertTrue(0 < percent_change < 0.05)
+        # current will also need to decrease slightly
+        # note: change might be too slight for the roundoff 
+        #       to show it, so include 0% change
+        percent_change = (c_fin - c) / c
+        self.assertTrue(0 <= percent_change < .05)
         
         # 4. constant power
         df.reset()
         p = 15.0  # ohms-m2
         df.evolve_one_time_step_constant_power(dt, p)
+        v = df.outbot.potential[0]
+        c = df.outbot.current[0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
         # power is always positive
         p_fin = abs(v_fin * c_fin)
-        # affirm success
+        # power uses the same error for the same reason
         self.assertAlmostEqual(p, p_fin, delta=error)
+        # voltage will decrease as a result of maintaining
+        #     power. Check within 5% change
+        percent_change = (v - v_fin) / v
+        self.assertTrue(0 < percent_change < 0.05)
+        # current must increase slightly to accomodate;
+        # note: roundoff error may show this change as 0%
+        percent_change = (c_fin - c) / c
+        self.assertTrue(0 <= percent_change < .05)
 
     def test_impedance(self):
         # test the impedance mode of dualfoil5.2
