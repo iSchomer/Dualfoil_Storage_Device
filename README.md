@@ -20,7 +20,7 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  $ git clone https://github.com/iSchomer/Dualfoil_Storage_Device.git
  ```
 
- 3. This should download a `Dualfoil_Storage_Device` directory. Run a Docker conatiner with the pycap image inside the cloned directory:
+ 3. This should download a `Dualfoil_Storage_Device` directory. Run a Docker container with the pycap image inside the cloned directory:
 
  ```
  $ docker run --rm -it -p 8888:8888 -v $PWD:/notebooks dalg24/cap

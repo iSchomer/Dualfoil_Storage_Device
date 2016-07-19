@@ -79,8 +79,7 @@ class Dualfoil(EnergyStorageDevice):
         """
         # make sure dualfoil5.2 is being used
         if self.restart_capable:
-            print('This feature is only compatible with dualfoil5.2')
-            return
+            raise RuntimeError('This option is only compatible with dualfoil5.2')
 
         # change input file to run impedance mode
         self.inbot.add_impedance()
@@ -116,8 +115,7 @@ class Dualfoil(EnergyStorageDevice):
         """
         # this feature is only for 5.1
         if not self.restart_capable:
-            print('This feature is only compatable with dualfoil5.1')
-            return -1
+            raise RuntimeError('This feature is only compatable with dualfoil5.1')
 
         rstFile = open('%sdf_restart.dat' % self.file_path, 'r')
         tmp = rstFile.readline()
@@ -225,8 +223,7 @@ class Dualfoil(EnergyStorageDevice):
         """
         # make sure we have the correct dualfoil
         if not self.restart_capable:
-            print('This simulation option is only available for dualfoil5.1')
-            return
+            raise RuntimeError('This simulation option is only available for dualfoil5.1')
 
         # pycap currents: - for discharge, + for charge
         # dualfoil currents: + for discharge, - for charge
@@ -276,8 +273,7 @@ class Dualfoil(EnergyStorageDevice):
         """
         # make sure we have the correct dualfoil
         if not self.restart_capable:
-            print('This simulation option is only available for dualfoil5.1')
-            return
+            raise RuntimeError('This simulation option is only available for dualfoil5.1')
 
         time_step = time_step / 60
         total_time = time_step
@@ -324,8 +320,7 @@ class Dualfoil(EnergyStorageDevice):
         """
         # make sure we have the correct dualfoil
         if not self.restart_capable:
-            print('This simulation option is only available for dualfoil5.1')
-            return
+            raise RuntimeError('This simulation option is only available for dualfoil5.1')
 
         time_step = time_step / 60
         total_time = time_step
@@ -370,8 +365,7 @@ class Dualfoil(EnergyStorageDevice):
         """
         # make sure we have the correct dualfoil
         if not self.restart_capable:
-            print('This simulation option is only available for dualfoil5.1')
-            return
+            raise RuntimeError('This simulation option is only available for dualfoil5.1')
 
         time_step = time_step / 60
         total_time = time_step
