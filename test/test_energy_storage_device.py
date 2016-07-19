@@ -419,6 +419,7 @@ class DualfoilTestCase(unittest.TestCase):
 
     def test_impedance(self):
         # test the impedance mode of dualfoil5.2
+        # by confirming that certain relationships hold true
         df = Dualfoil(path=path2, input_name='li-ion.in',
                       restart_capable=False)
         df.run_impedance()
@@ -427,6 +428,9 @@ class DualfoilTestCase(unittest.TestCase):
         omega = []   # rad/s
         z_real = []  # ohm*cm2
         z_imag = []  # ohm*cm2
+        omega_sections = []
+        z_real_sections = []
+        z_imag_sections = []
 
         # extract the output, determine that data make sense
         with open('%sdualfoil5.out' % path2, 'r') as fout:
@@ -435,21 +439,47 @@ class DualfoilTestCase(unittest.TestCase):
             while line.find('(Rad/s)') == -1:
                 line = fout.readline()
 
-            # extract the output
+            # output is organized in sections of decreasing
+            # Omega values. Organize into chunks
             while line != '':
-                if line.find(',') != -1:
-                    tmp = line.split(',')
-                    # indication of failure: entry is 'NaN'
+                if line.find('.') != -1:
+                    # first section not separated by commas
+                    if line.find(',') == -1:
+                        tmp = line.lstrip(' ').split()
+                    else:
+                        tmp = line.split(',')
                     omega.append(float(tmp[0]))
                     z_real.append(float(tmp[1]))
                     z_imag.append(float(tmp[2]))
+                else:
+                    # must be in between a section
+                    # if we have output, add it as a section
+                    if len(omega) != 0:
+                        omega_sections.append(omega)
+                        z_real_sections.append(z_real)
+                        z_imag_sections.append(z_imag)
+                        omega.clear()
+                        z_real.clear()
+                        z_imag.clear()
                 line = fout.readline()
 
-        # indication of failure: an entry that is not nonzero
-        for i in range(0, len(omega)-1):
-            self.assertNotEqual(omega[i], 0)
-            self.assertNotEqual(z_real[i], 0)
-            self.assertNotEqual(z_imag[i], 0)
+        # Assert the following relationships hold:
+        # (1) `Omega` decreases accross each section
+        # (2) `Z_real` increases accross each section
+        # (3) `z_imag` decreases accross each section
+        for sec in omega_sections:
+            # relationship (1)
+            for i in range(1, len(sec)-1):
+                self.assertTrue(sec[i] < sec[i-1])
+        for sec in z_real_sections:
+            # relationship (2)
+            for i in range(1, len(sec)-1):
+                self.assertTrue(sec[i] >= sec[i-1])
+        for sec in z_imag_sections:
+            # relationship (3)
+            for i in range(1, len(sec)-1):
+                self.assertTrue(sec[i] <= sec[i-1])
+                
 
 if __name__ == '__main__':
     unittest.main()
