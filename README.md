@@ -20,22 +20,23 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
  $ git clone https://github.com/iSchomer/Dualfoil_Storage_Device.git
  ```
 
- 3. This should download a `Dualfoil_Storage_Device` directory. Make the dualfoil executable file:
-
- ```
- $ cd Dualfoil_Storage_Device/docker
- $ make dualfoil
- ```
-
- 4. Lastly, run a Docker container with the pycap image:
+ 3. This should download a `Dualfoil_Storage_Device` directory. Run a Docker container with the pycap image inside the cloned directory:
 
  ```
  $ docker run --rm -it -p 8888:8888 -v $PWD:/notebooks dalg24/cap
  ```
 
- 5. Pycap and this code can be accessed by opening up a browser and going to `http://<ip_address>:8888` where `ip_address` is the IP address of the machine with the Docker daemon running.
+ 4. Pycap and this code can be accessed by opening up a browser and going to `http://<ip_address>:8888` where `ip_address` is the IP address of the machine with the Docker daemon running.
 
-Once you have opened into the Jupyter notebook, you will have access to pycap as well as all the code included in this repository.
+ 5. Lastly, once inside the Jupyter browser, compile the dualfoil executables:
+ ```
+ $ cd docker/dualfoil5-1
+ $ make dualfoil
+ $ cd ../dualfoil5-2
+ $ make
+ ```
+
+Once you have completed these steps, you will have access to pycap as well as all the code included in this repository.
 
 
 ## Basic Use
@@ -45,12 +46,16 @@ Once you have opened into the Jupyter notebook, you will have access to pycap as
 
  Here is an example of some basic operations:
  ```python
+ # add battery module to path
+ import sys
+ sys.path.append('/notebooks')
+
  from pycap import PropertyTree, Charge
  from battery import *
  fom energy_storage_device import Dualfoil
 
  # can run dualfoil sim manually 
- device = Dualfoil(path='docker/')
+ device = Dualfoil(path='docker/dualfoil5-1')
  print(device.get_voltage())
  # charge for 1 minute with a constant current of 10 amperes
  device.evolve_one_time_step_constant_current(60, 10.0)

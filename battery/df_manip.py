@@ -24,13 +24,12 @@ class InputManager:
         Name of the input file to be used by dualfoil
     file_path: str
         Full or relative path to dualfoil files
-    from_restart: bool
+    from_restart: bool, optional
         indicates whether the next simulation will occur from a restart
-    low_voltage_cut, high_voltage_cut: float
-        Parameter used by dualfoil that cuts off simulation at these values
     """
 
-    def __init__(self, path, input_name='dualfoil5.in'):
+    def __init__(self, path, input_name='dualfoil5.in',
+                 restart_capable=True):
         """
         Parameters
         ----------
@@ -38,6 +37,9 @@ class InputManager:
             Full or relative path to dualfoil files
         input_name : str, optional
             Name of the input file
+        restart_capable : bool
+            Indicates whether dualfoil5.1 (restart capable) or
+            dualfoil5.2 (restart incapable) is being used
         """
         if path is None: 
             self.file_path = ''
@@ -45,8 +47,7 @@ class InputManager:
             self.file_path = path
         self.file_name = input_name
         self.from_restart = False
-        self.low_voltage_cut = 1e-3
-        self.high_voltage_cut = 14.0
+        self.restart_capable = restart_capable
 
     def reset(self):
         self.from_restart = False
@@ -83,11 +84,19 @@ class InputManager:
         new_input = ''
         modified = False
 
+        # BELOW: two variables used by both dualfoils in command line
+        # PURPOSE: represent the range of voltages outside which 
+        #   the battery should not continue running in
+        low_voltage_cut = 1e-3
+        high_voltage_cut = 14.0
+
         df_input = self.file_path + self.file_name
         with open('%s' % df_input, 'r') as file:
 
             line = file.readline()
             while line != '':
+                # this section applies only to dualfoil5.1
+                # doesn't alter 5.2 in any way though
                 if self.from_restart:
                     # make sure from_restart is set to true
                     if line.find('.false.') != -1:
@@ -97,7 +106,24 @@ class InputManager:
                     if line.find('.true.') != -1:
                         line = line.replace('.true.', '.false.')
 
-                # find line before the one we need; set tracker for next loopthru
+                # take dualfoil out of isothermal mode
+                if line.find('lht') != -1:
+                    tmp = line.split()
+                    if int(tmp[0]) != 0:
+                        # replace the first number with '0',
+                        # for regular heat generation mode
+                        line = line.replace(str(tmp[0]), '0', 1)
+
+                # make sure dualfoil is NOT in impedance mode
+                if line.find('imp') != -1:
+                    tmp = line.split()
+                    if int(tmp[0]) != 0:
+                        # replace the first number with '0' for off
+                        line = line.replace(str(tmp[0]), '0', 1)
+                    
+                # assure that the number of current changes is 1
+                # change exec line to our desired parameters
+                # set tracker for next loopthru
                 if line.find('lcurs') != -1 and not modified:
                     tmp = line.lstrip().split()
                     # also make sure lcurs is 1
@@ -108,17 +134,28 @@ class InputManager:
                     # skip over all other command lines
                     while line != '\n':
                         line = file.readline()
-                    # if next leg depends on time, we need the total time
-                    if (mode != 2) and (mode != -1):
-                        if self.from_restart:
-                            # depends on time AND we are from restart. 
-                            # need total in minutes for dualfoil
-                            total_time = get_total_time(self.file_path) / 60 
-                            stop_condition += total_time
+
+                    # Next section is only for dualfoil5.1
+                    if self.restart_capable:
+                        # if next leg depends on time, we need the total time
+                        if (mode != 2) and (mode != -1):
+                            if self.from_restart:
+                                # depends on time AND we are from restart. 
+                                # need total in minutes for dualfoil
+                                total_time = get_total_time(self.file_path) / 60 
+                                stop_condition += total_time
 
                     line = (str(run_value) + ' ' + str(stop_condition) +
-                            ' ' + str(mode) + ' ' + str(self.low_voltage_cut) +
-                            ' ' + str(self.high_voltage_cut))
+                            ' ' + str(mode) + ' ' + str(low_voltage_cut) +
+                            ' ' + str(high_voltage_cut))
+                    # BELOW: if using dualfoil5.2, another parameter exists
+                    #   at end of command line: internal_resistance
+                    # PURPOSE: 'internal resistance of foils, tabs, etc.'
+                    if not self.restart_capable:
+                        internal_resistance = 8e-4  # default value from download
+                        line = line + ' ' + str(internal_resistance)
+
+                    # check to see if optional description has been added
                     if descr is not None:
                         line = line + ' !' + descr + '\n\n'
                     else:
@@ -134,18 +171,90 @@ class InputManager:
             file.write(new_input)
             
         # if this is our first time, next will be from restart
+        # when working in dualfoil5.1
         if not self.from_restart:
             self.from_restart = True
+    
+    def add_impedance(self):
+        """
+        Changes the input file for impedance mode
+        
+        Only compatible with dualfoil5.2
+        """
+        new_input = ''
 
-def get_total_time(path=None):
+        #
+        # STEP 1: Adjust main input file
+        #
+        df_input = self.file_path + self.file_name
+        with open('%s' % df_input, 'r') as file:
+
+            line = file.readline()
+            while line != '':
+                # must set `lht` to 2
+                # this puts dualfoil in isothermal mode
+                if line.find('lht') != -1:
+                    tmp = line.split()
+                    if int(tmp[0]) != 2:
+                        # replace the first number with '2'
+                        line = line.replace(str(tmp[0]), '2', 1)
+
+                # also must set `imp` to 1
+                # this flag runs dualfoil in impedance mode
+                if line.find('imp') != -1:
+                    tmp = line.split()
+                    if int(tmp[0]) != 1:
+                        # replace the first number with '1'
+                        line = line.replace(str(tmp[0]), '1', 1)
+
+                # keep up the new file and read next line
+                new_input += line
+                line = file.readline()
+
+        # rewrite the input file 
+        with open(df_input, 'w') as file:
+            file.write(new_input)
+            
+        #
+        # STEP 2: adjust activation-energy input file
+        # (impedance mode only works if activation energies of)
+        # (      solid-state diffusions are equal to 0.       )
+        #
+        new_input = ''
+        df_input = self.file_path + 'li-ion-ebar.in'
+        with open('%s' % df_input, 'r') as file:
+            for line in file.readlines():
+                if line.find('solid state diffusion') != -1:
+                    # replace the number with 0 if it isn't already
+                    tmp = line.split()
+                    if float(tmp[0]) != 0:
+                        line = line.replace(str(tmp[0]), '0.0', 1)
+                # keep up new input 
+                new_input += line
+
+        # rewrite activation-energy input file
+        with open('%s' % df_input, 'w') as file:
+            file.write(new_input)
+        
+
+def get_total_time(path=None, restart_capable=True):
     """
     Get the total dualfoil simulation time in minutes
-    
+
+    Only compatible with dualfoil5.1
+
     Parameters
     ----------
     path : str, optional
         Full or relative path to dualfoil files
+    restart_capable : bool, optional
+        Indicates whether dualfoil5.1 (restart capable) or
+        dualfoil5.2 (restart incapable) is being used
     """
+
+    if not restart_capable:
+        print('This feature is only applicable when working with dualfoil5.2')
+        return
 
     if path is None:
         restart_file = open('df_restart.dat', 'r')

@@ -8,7 +8,8 @@ from numpy import argsort
 
 import unittest
 
-path = '/notebooks/docker/'
+path = '/notebooks/docker/dualfoil5-1/'   # 5.1
+path2 = '/notebooks/docker/dualfoil5-2/'  # 5.2
 
 class DualfoilTestCase(unittest.TestCase):
     def test_consistency_constant_evolve_functions(self):
@@ -58,8 +59,8 @@ class DualfoilTestCase(unittest.TestCase):
                                dt)
         self.assertAlmostEqual(load, L, delta=error)
         df.reset()
-        Vcut = 4.3    # cutoff voltage
-        C = -10.0     # current (discharge)
+        Vcut = 4.53   # cutoff voltage
+        C = 10.0      # current (charge)
         error = 1e-4  # voltage has roundoff error after
                       #   the fourth decimal place
         df.evolve_to_voltage_constant_current(C, Vcut)
@@ -132,7 +133,7 @@ class DualfoilTestCase(unittest.TestCase):
         # testing a charge-to-hold-const-voltage
         # manual 
         # use InputManager to set the input file
-        c = -10.0  # constant current
+        c = -12.0  # constant current
         im.add_new_leg(c, 5.0, 1)
         df1.run()
         df1.outbot.update_output()
@@ -146,7 +147,7 @@ class DualfoilTestCase(unittest.TestCase):
         ptree = PropertyTree()
         ptree.put_double('time_step', 300.0)  # 5 minutes
         ptree.put_string('charge_mode', 'constant_current')
-        ptree.put_double('charge_current', 10.0)
+        ptree.put_double('charge_current', 12.0)
         ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
         ptree.put_double('charge_voltage_limit', 4.54)
         ptree.put_bool('charge_voltage_finish', True)
@@ -161,6 +162,7 @@ class DualfoilTestCase(unittest.TestCase):
         # check the output lists of both devices
         o1 = df1.outbot
         o2 = df2.outbot
+        o2.write_main_output()
         self.assertEqual(len(o1.time), len(o2.time))
         for i in range(len(o1.time)):
             self.assertAlmostEqual(o1.time[i], o2.time[i])
@@ -178,19 +180,19 @@ class DualfoilTestCase(unittest.TestCase):
         # tests the accuracy of a pycap simulation against a 
         # straight run dualfoil sim with different timesteps
         #
-        df1 = Dualfoil(path=path)  # will use pycap
-        df2 = Dualfoil(path=path)  # manual runs
+        df1 = Dualfoil(path=path)  # manual runs
+        df2 = Dualfoil(path=path)  # pycap simulation
         im = df_manip.InputManager(path=path)
 
         # testing a charge-to-hold-const-voltage
         # manual 
         # use InputManager to set the input file
         c = -10.0  # constant charge current
-        # charge for 4 minutes straight
-        im.add_new_leg(c, 4.0, 1)
+        # charge for 5 minutes straight
+        im.add_new_leg(c, 5, 1)
         df1.run()
         df1.outbot.update_output()
-        v = 4.54  # constant voltage
+        v = 4.539  # expected voltage after 5 minutes
         # hold constant voltage for 3 minutes straight
         im.add_new_leg(v, 3.0, 0)
         df1.run()
@@ -199,11 +201,11 @@ class DualfoilTestCase(unittest.TestCase):
         # pycap simulation
         # build a ptree input
         ptree = PropertyTree()
-        ptree.put_double('time_step', 20.0)  # 20 second time step
+        ptree.put_double('time_step', 30.0)  # 30 second time step
         ptree.put_string('charge_mode', 'constant_current')
         ptree.put_double('charge_current', 10.0)
         ptree.put_string('charge_stop_at_1', 'voltage_greater_than')
-        ptree.put_double('charge_voltage_limit', 4.54)
+        ptree.put_double('charge_voltage_limit', v)
         ptree.put_bool('charge_voltage_finish', True)
         # hold end voltage after either 3 minutes have passed
         # OR current falls under 1 ampere
@@ -215,6 +217,7 @@ class DualfoilTestCase(unittest.TestCase):
 
         o1 = df1.outbot         # contains sim1 output
         o2 = df2.outbot         # contains sim2 output
+        o2.write_main_output()
 
         # affirm we make it this far and have usable data
         self.assertTrue(len(o1.time) > 0)
@@ -275,7 +278,7 @@ class DualfoilTestCase(unittest.TestCase):
         #     skip ahead to first instance where time stamps will 
         #     be out of alignment
         i = 0
-        while output['time'][i] < (1/3):  # 20 seconds
+        while output['time'][i] <= 0.4:  # 24 seconds
             i = i + 1
         index_limit = len(output['time'])-1  
         
@@ -292,7 +295,7 @@ class DualfoilTestCase(unittest.TestCase):
                 # REASON: `sorted()` can't tell which entry came
                 #   first from same time-stamp if from different
                 #   simulations; allow for this with error
-                error = 2e-5
+                error = 3e-5
                 self.assertAlmostEqual(output['voltage'][i],
                                        output['voltage'][i-1],
                                        delta=error)
@@ -302,15 +305,15 @@ class DualfoilTestCase(unittest.TestCase):
                 # constant is steadily increasing / decreasing
 
                 # First part happens in first 4 minutes
-                if output['time'][i] <= 4.0:  # part 1, const currrent
+                if output['time'][i] <= 5.0:  # part 1, const currrent
                     # current should be equal
                     self.assertEqual(output['current'][i],
                                      output['current'][i-1])
                     # voltage should not have decreased
-                    self.assertTrue(output['voltage'][i] >=
+                    self.assertTrue(output['voltage'][i],
                                     output['voltage'][i-1])
                 else:  # part 2, const voltage                
-                    # current should be decreasing or staying the same
+                    # current should be getting less negative
                     self.assertTrue(output['current'][i] <=
                                     output['current'][i-1])
                     # voltage should decrease, then stay at 4.54
@@ -322,6 +325,173 @@ class DualfoilTestCase(unittest.TestCase):
                                         output['voltage'][i-1])
             # update index
             i = i + 1
+    
+    def test_compatibilty_other_dualfoil(self):
+        # PURPOSE: test to see if Dualfoil object works with the
+        #   version of dualfoil without restard (5.2)
+        df = Dualfoil(path=path2, input_name='li-ion.in',
+                      restart_capable=False)
+
+        # Go through evolve tests. Affirm the following:
+        #   1. Variable held constant stays constant
+        #   2. Dependent variable changes in an expected way, 
+        #          within an expected range based on sim time
+
+        v = df.get_voltage()
+        # make sure voltage works by ensuring it does not 
+        # equal one of the indicators of failure
+        self.assertTrue(v != 0)
+        self.assertTrue(v != -1)
+
+        # 1. constant current (charge)
+        dt = 15.0  # 15 sec
+        c = 5.0   # 5 amperes
+        df.evolve_one_time_step_constant_current(dt, c)
+        v_fin = df.get_voltage()
+        c_fin = df.get_current()
+        # affirm success
+        # current is constant
+        self.assertEqual(c, c_fin)
+        # charging means potential is increasing
+        # change greater than 1% increase would be unrealistic
+        #    for the given battery and sim time
+        percent_change = (v_fin - v) / v
+        self.assertTrue(0 < percent_change < 0.01)
+
+        # 2. constant voltage
+        df.reset()
+        v = df.get_voltage()  # volts
+        # (no way to get an accurate initial current)
+        df.evolve_one_time_step_constant_voltage(dt, v)
+        v_fin = df.get_voltage()
+        c_fin = df.get_current()
+        # affirm success
+        # percent change cannot easily indicate success;
+        # expected range: -3.78 amperes < current < -3.76
+        self.assertTrue(-3.78 < c_fin < -3.76)
+        # voltage is constant
+        self.assertEqual(v, v_fin)
+
+        # 3. constant load
+        df.reset()
+        load = 0.7  # ohms-m2
+        df.evolve_one_time_step_constant_load(dt, load)
+        v = df.outbot.potential[0]
+        c = df.outbot.current[0]
+        v_fin = df.get_voltage()
+        c_fin = df.get_current()
+        # load should be positive
+        load_fin = abs(v_fin / c_fin)
+        # load should be close to equal, but not quite...
+        # REASON: roundoff error of current and voltage
+        # SOLUTION: create room for error with `error`
+        error = 2e-2
+        self.assertAlmostEqual(load, load_fin, delta=error)
+        # voltage should have decreased as a result of maintaining
+        #     load. Check within 5% change
+        percent_change = (v - v_fin) / v
+        self.assertTrue(0 < percent_change < 0.01)
+        # current will also need to decrease slightly
+        # note: change might be too slight for the roundoff 
+        #       to show it, so include 0% change
+        percent_change = (c_fin - c) / c
+        self.assertTrue(0 <= percent_change < .01)
+
+        # 4. constant power
+        df.reset()
+        p = 15.0  # ohms-m2
+        df.evolve_one_time_step_constant_power(dt, p)
+        v = df.outbot.potential[0]
+        c = df.outbot.current[0]
+        v_fin = df.get_voltage()
+        c_fin = df.get_current()
+        # power is always positive
+        p_fin = abs(v_fin * c_fin)
+        # power uses the same error for the same reason
+        self.assertAlmostEqual(p, p_fin, delta=error)
+        # voltage will decrease as a result of maintaining
+        #     power. Check within 5% change
+        percent_change = (v - v_fin) / v
+        self.assertTrue(0 < percent_change < 0.01)
+        # current must increase slightly to accomodate;
+        # note: roundoff error may show this change as 0%
+        percent_change = (c_fin - c) / c
+        self.assertTrue(0 <= percent_change < .01)
+
+    def test_impedance(self):
+        # test the impedance mode of dualfoil5.2
+        # by confirming that certain relationships hold true
+        df = Dualfoil(path=path2, input_name='li-ion.in',
+                      restart_capable=False)
+        df.run_impedance()
+
+        # list variables for impedance mode
+        omega = []   # rad/s
+        z_real = []  # ohm*cm2
+        z_imag = []  # ohm*cm2
+        ref_omega = []
+        ref_z_real = []
+        ref_z_imag = []
+
+        # extract the output, determine that data make sense
+        with open('%sdualfoil5.out' % path2, 'r') as fout:
+            # read until the beginning of the data
+            line = fout.readline()
+            while line.find('(Rad/s)') == -1:
+                line = fout.readline()
+
+            # take only lines of output
+            while line != '':
+                if line.find('.') != -1:
+                    # first section not separated by commas
+                    if line.find(',') == -1:
+                        tmp = line.lstrip(' ').split()
+                    else:
+                        tmp = line.split(',')
+                    omega.append(float(tmp[0]))
+                    z_real.append(float(tmp[1]))
+                    z_imag.append(float(tmp[2]))
+                line = fout.readline()
+
+        # extract the reference data 
+        ref_path = '/notebooks/test/reference_data/'
+        with open('%simpedance.out' % ref_path, 'r') as fin:
+            # read until the beginning of the data
+            line = fin.readline()
+            while line.find('(Rad/s)') == -1:
+                line = fin.readline()
+
+            # take only lines of output
+            while line != '':
+                if line.find('.') != -1:
+                    # first section not separated by commas
+                    if line.find(',') == -1:
+                        tmp = line.lstrip(' ').split()
+                    else:
+                        tmp = line.split(',')
+                    ref_omega.append(float(tmp[0]))
+                    ref_z_real.append(float(tmp[1]))
+                    ref_z_imag.append(float(tmp[2]))
+                line = fin.readline()
+
+        # Affirm that list sizes are equivalent
+        self.assertEqual(len(omega), len(ref_omega))
+        self.assertEqual(len(z_real), len(ref_z_real))
+        self.assertEqual(len(z_imag), len(ref_z_imag))
+
+        # If using same input parameters as in `reference_data`,
+        #     entries should be identical
+        for i in range(len(omega)):
+            # In order to offset any inter-system roundoffs, 
+            #   create a tolerance of the last printed decimal
+            error = 1e-6
+            self.assertAlmostEqual(omega[i], ref_omega[i],
+                                   delta=error)
+            self.assertAlmostEqual(z_real[i], ref_z_real[i],
+                                   delta=error)
+            self.assertAlmostEqual(z_imag[i], ref_z_imag[i],
+                                   delta=error)
+                
 
 if __name__ == '__main__':
     unittest.main()
