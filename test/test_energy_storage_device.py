@@ -482,9 +482,15 @@ class DualfoilTestCase(unittest.TestCase):
         # If using same input parameters as in `reference_data`,
         #     entries should be identical
         for i in range(len(omega)):
-            self.assertEqual(omega[i], ref_omega[i])
-            self.assertEqual(z_real[i], ref_z_real[i])
-            self.assertEqual(z_imag[i], ref_z_imag[i])
+            # In order to offset any inter-system roundoffs, 
+            #   create a tolerance of the last printed decimal
+            error = 1e-6
+            self.assertAlmostEqual(omega[i], ref_omega[i],
+                                   delta=error)
+            self.assertAlmostEqual(z_real[i], ref_z_real[i],
+                                   delta=error)
+            self.assertAlmostEqual(z_imag[i], ref_z_imag[i],
+                                   delta=error)
                 
 
 if __name__ == '__main__':
