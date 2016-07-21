@@ -353,10 +353,10 @@ class DualfoilTestCase(unittest.TestCase):
         # current is constant
         self.assertEqual(c, c_fin)
         # charging means potential is increasing
-        # change greater than 5% increase would be unrealistic
+        # change greater than 1% increase would be unrealistic
         #    for the given battery and sim time
         percent_change = (v_fin - v) / v
-        self.assertTrue(0 < percent_change < 0.05)
+        self.assertTrue(0 < percent_change < 0.01)
 
         # 2. constant voltage
         df.reset()
@@ -366,8 +366,9 @@ class DualfoilTestCase(unittest.TestCase):
         v_fin = df.get_voltage()
         c_fin = df.get_current()
         # affirm success
-        # expected range: -10 amperes < current < 0 amperes
-        self.assertTrue(-10 < c_fin < 0)
+        # percent change cannot easily indicate success;
+        # expected range: -3.78 amperes < current < -3.76
+        self.assertTrue(-3.78 < c_fin < -3.76)
         # voltage is constant
         self.assertEqual(v, v_fin)
 
@@ -389,13 +390,13 @@ class DualfoilTestCase(unittest.TestCase):
         # voltage should have decreased as a result of maintaining
         #     load. Check within 5% change
         percent_change = (v - v_fin) / v
-        self.assertTrue(0 < percent_change < 0.05)
+        self.assertTrue(0 < percent_change < 0.01)
         # current will also need to decrease slightly
         # note: change might be too slight for the roundoff 
         #       to show it, so include 0% change
         percent_change = (c_fin - c) / c
-        self.assertTrue(0 <= percent_change < .05)
-        
+        self.assertTrue(0 <= percent_change < .01)
+
         # 4. constant power
         df.reset()
         p = 15.0  # ohms-m2
@@ -411,11 +412,11 @@ class DualfoilTestCase(unittest.TestCase):
         # voltage will decrease as a result of maintaining
         #     power. Check within 5% change
         percent_change = (v - v_fin) / v
-        self.assertTrue(0 < percent_change < 0.05)
+        self.assertTrue(0 < percent_change < 0.01)
         # current must increase slightly to accomodate;
         # note: roundoff error may show this change as 0%
         percent_change = (c_fin - c) / c
-        self.assertTrue(0 <= percent_change < .05)
+        self.assertTrue(0 <= percent_change < .01)
 
     def test_impedance(self):
         # test the impedance mode of dualfoil5.2
@@ -428,9 +429,9 @@ class DualfoilTestCase(unittest.TestCase):
         omega = []   # rad/s
         z_real = []  # ohm*cm2
         z_imag = []  # ohm*cm2
-        omega_sections = []
-        z_real_sections = []
-        z_imag_sections = []
+        ref_omega = []
+        ref_z_real = []
+        ref_z_imag = []
 
         # extract the output, determine that data make sense
         with open('%sdualfoil5.out' % path2, 'r') as fout:
@@ -439,8 +440,7 @@ class DualfoilTestCase(unittest.TestCase):
             while line.find('(Rad/s)') == -1:
                 line = fout.readline()
 
-            # output is organized in sections of decreasing
-            # Omega values. Organize into chunks
+            # take only lines of output
             while line != '':
                 if line.find('.') != -1:
                     # first section not separated by commas
@@ -451,34 +451,40 @@ class DualfoilTestCase(unittest.TestCase):
                     omega.append(float(tmp[0]))
                     z_real.append(float(tmp[1]))
                     z_imag.append(float(tmp[2]))
-                else:
-                    # must be in between a section
-                    # if we have output, add it as a section
-                    if len(omega) != 0:
-                        omega_sections.append(omega)
-                        z_real_sections.append(z_real)
-                        z_imag_sections.append(z_imag)
-                        omega.clear()
-                        z_real.clear()
-                        z_imag.clear()
                 line = fout.readline()
 
-        # Assert the following relationships hold:
-        # (1) `Omega` decreases accross each section
-        # (2) `Z_real` increases accross each section
-        # (3) `z_imag` decreases accross each section
-        for sec in omega_sections:
-            # relationship (1)
-            for i in range(1, len(sec)-1):
-                self.assertTrue(sec[i] < sec[i-1])
-        for sec in z_real_sections:
-            # relationship (2)
-            for i in range(1, len(sec)-1):
-                self.assertTrue(sec[i] >= sec[i-1])
-        for sec in z_imag_sections:
-            # relationship (3)
-            for i in range(1, len(sec)-1):
-                self.assertTrue(sec[i] <= sec[i-1])
+        # extract the reference data 
+        ref_path = '/notebooks/test/reference_data/'
+        with open('%simpedance.out' % ref_path, 'r') as fin:
+            # read until the beginning of the data
+            line = fin.readline()
+            while line.find('(Rad/s)') == -1:
+                line = fin.readline()
+
+            # take only lines of output
+            while line != '':
+                if line.find('.') != -1:
+                    # first section not separated by commas
+                    if line.find(',') == -1:
+                        tmp = line.lstrip(' ').split()
+                    else:
+                        tmp = line.split(',')
+                    ref_omega.append(float(tmp[0]))
+                    ref_z_real.append(float(tmp[1]))
+                    ref_z_imag.append(float(tmp[2]))
+                line = fin.readline()
+
+        # Affirm that list sizes are equivalent
+        self.assertEqual(len(omega), len(ref_omega))
+        self.assertEqual(len(z_real), len(ref_z_real))
+        self.assertEqual(len(z_imag), len(ref_z_imag))
+
+        # If using same input parameters as in `reference_data`,
+        #     entries should be identical
+        for i in range(len(omega)):
+            self.assertEqual(omega[i], ref_omega[i])
+            self.assertEqual(z_real[i], ref_z_real[i])
+            self.assertEqual(z_imag[i], ref_z_imag[i])
                 
 
 if __name__ == '__main__':
