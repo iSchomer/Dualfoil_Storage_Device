@@ -205,7 +205,7 @@ class Dualfoil(EnergyStorageDevice):
             print("Error when executing dualfoil: ", err)
 
     def evolve_one_time_step_linear_current(self, time_step, current,
-                                            divisor=10):
+                                            divisor=4):
         """
         Impose a linearly increasing current by dividing into substeps
         of constant current, and evolve in time.
@@ -253,9 +253,11 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        # indicate computation progress
+        print('.', end='')
 
     def evolve_one_time_step_linear_voltage(self, time_step, voltage,
-                                            divisor=10):
+                                            divisor=4):
         """
         Impose a linearly increasing voltage by dividing into substeps
         of constant voltage, and evolve in time.
@@ -296,11 +298,13 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        # indicate computation progress
+        print('.', end='')
 
     # start_point parameter added to the following 2 functions
     # because they cannot be extracted
     def evolve_one_time_step_linear_power(self, time_step, power,
-                                          start_point=0.0, divisor=10):
+                                          start_point=0.0, divisor=4):
         """
         Impose a linearly increasing power by dividing into substeps
         of constant power, and evolve in time.
@@ -343,9 +347,11 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        # indicate computation progress
+        print('.', end='')
 
     def evolve_one_time_step_linear_load(self, time_step, load,
-                                         start_point=0.0, divisor=10):
+                                         start_point=0.0, divisor=4):
         """
         Impose a linearly increasing load by dividing into substeps
         of constant load, and evolve in time.
@@ -388,3 +394,5 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        # indicate computation progress
+        print('.', end='')

@@ -351,10 +351,10 @@ def extract_main_output(file='dualfoil5.out', path=None):
         # Pycap:    - for discharge, + for charge
         # multiply by -1 to account for this
         current.append(float(tmp[5])*(-1))
+        # sometimes dualfoil does not compute next two
+        if (tmp[6] == ' ******'):
+            tmp[6] = '0.00'
         temperature.append(float(tmp[6]))
-
-        # for 5.1 code
-
         if (tmp[7] == ' ******'):
             tmp[7] = '0.00'
         heat_gen.append(float(tmp[7]))
