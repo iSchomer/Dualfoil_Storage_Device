@@ -1,7 +1,6 @@
 import sys
 sys.path.append('/notebooks')
-from battery import *
-from energy_storage_device import Dualfoil
+from battery import Dualfoil, df_manip
 from pycap import PropertyTree, Charge
 from numpy import array as ar
 from numpy import argsort

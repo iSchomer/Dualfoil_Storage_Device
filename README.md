@@ -51,8 +51,7 @@ Once you have completed these steps, you will have access to pycap as well as al
  sys.path.append('/notebooks')
 
  from pycap import PropertyTree, Charge
- from battery import *
- fom energy_storage_device import Dualfoil
+ from battery import Dualfoil
 
  # can run dualfoil sim manually 
  device = Dualfoil(path='docker/dualfoil5-1')
