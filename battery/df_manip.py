@@ -285,6 +285,25 @@ def extract_main_output(file='dualfoil5.out', path=None):
     -------
     dict
         contains each list of floats generated in main dualfoil output
+
+        Keys
+        ----
+        time : list of float
+            the time in seconds
+        neg_util : list of float
+            initial stoicheometric parameter for the negative electrolyte
+        pos_util : list of float
+            initial stoicheometric parameter for the positive electrolyte
+        potential : list of float
+            the potential of the cell in volts
+        open_circuit_potential : list of float
+            the open-circuit potential in volts
+        current : list of float
+            the current in amperes
+        temperature : list of float
+            the temperature in Celcius
+        heat_gen : list of float
+            the generated heat in Watts/m^2
     """
 
     # first go through and find position where output starts in file
@@ -363,6 +382,31 @@ def extract_profiles(file='profiles.out', path=None):
         Contains lists for each type of input
         *Note: 'time' is a list of floats; every other key is two-dimmensional
                ([number of timesteps] by [number of nodes across cell])
+        
+        Keys
+        ----
+        time : list of float
+            the time stamp in seconds for each profile taken
+        distance : list of list of float
+            locations of nodes across the cell in microns
+        electrolyte_conc : list of list of float
+            concentration in mol/m^3
+        solid_surface_conc : list of list of float
+            concentration in mol/m^3
+        liquid_potential : list of list of float
+            the liquid potential in volts
+        solid_potential : list of list of float
+            the solid potential in volts
+        liquid_current : list of list of float
+            liquid current density in amperes/m^2
+        j_main : list of list of float
+            main liquid current density in amperes/m^2
+        j_side_1 : list of list of float
+            first side reaction liquid current density in amperes/m^2
+        j_side_2 : list of list of float
+            second side reaction liquid current density in amperes/m^2
+        j_side_3 : list of list of float
+            third side reaction liquid current density in amperes/m^2
     """
 
     if path is not None:
@@ -451,11 +495,55 @@ class OutputManager:
     output : dict
         Contains lists of floats for each variable written
         to Dualfoil's main output file
+        
+        Keys
+        ----
+        time : list of float
+            the time in seconds
+        neg_util : list of float
+            initial stoicheometric parameter for the negative electrolyte
+        pos_util : list of float
+            initial stoicheometric parameter for the positive electrolyte
+        potential : list of float
+            the potential of the cell in volts
+        open_circuit_potential : list of float
+            the open-circuit potential in volts
+        current : list of float
+            the current in amperes
+        temperature : list of float
+            the temperature in Celcius
+        heat_gen : list of float
+            the generated heat in Watts/m^2
     profiles : dict
         Contains a one-dimmensional list of timesteps
         Contains two-dimmensional lists of variables written to
           'profiles.out,' with the following max sizes:
           variable[number of timesteps][nodes across cell]
+        
+        Keys
+        ----
+        time : list of float
+            the time stamp in seconds for each profile taken
+        distance : list of list of float
+            locations of nodes across the cell in microns
+        electrolyte_conc : list of list of float
+            concentration in mol/m^3
+        solid_surface_conc : list of list of float
+            concentration in mol/m^3
+        liquid_potential : list of list of float
+            the liquid potential in volts
+        solid_potential : list of list of float
+            the solid potential in volts
+        liquid_current : list of list of float
+            liquid current density in amperes/m^2
+        j_main : list of list of float
+            main liquid current density in amperes/m^2
+        j_side_1 : list of list of float
+            first side reaction liquid current density in amperes/m^2
+        j_side_2 : list of list of float
+            second side reaction liquid current density in amperes/m^2
+        j_side_3 : list of list of float
+            third side reaction liquid current density in amperes/m^2
     """
     
     def __init__(self, path):

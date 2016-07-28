@@ -70,7 +70,10 @@ def graph_profiles_3D(x, y, z, clarity=5,
                            linewidth=0, cmap=cm.plasma)
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
-    for angle in range(0,360):
-        ax.view_init(30, angle)
-        plt.draw()
+    # uncomment for interactive display
+    # does not work well with Jupyter
+    #for angle in range(0,360):
+    #    ax.view_init(30, angle)
+    #    plt.draw()
+    ax.view_init(30, -30)
     plt.show()
