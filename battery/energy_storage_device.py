@@ -157,6 +157,11 @@ class Dualfoil(EnergyStorageDevice):
 
     def evolve_one_time_step_constant_power(self, time_step, power):
         time_step = time_step / 60
+        # must negate power to align with Cap:
+        # - power decreases voltage
+        # + power increases voltage
+        # Dualfoil is opposite
+        power = -power
         try:
             self.inbot.add_new_leg(power, time_step, -2, "constant power")
             self.run()
@@ -325,6 +330,12 @@ class Dualfoil(EnergyStorageDevice):
         # make sure we have the correct dualfoil
         if not self.restart_capable:
             raise RuntimeError('This simulation option is only available for dualfoil5.1')
+
+        # must negate power to align with Cap:
+        # - power decreases voltage
+        # + power increases voltage
+        # Dualfoil is opposite
+        power = -power
 
         time_step = time_step / 60
         total_time = time_step
