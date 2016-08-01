@@ -159,20 +159,19 @@ class DualfoilTestCase(unittest.TestCase):
         const_current_const_voltage.run(df2)
 
         # check the output lists of both devices
-        o1 = df1.outbot
-        o2 = df2.outbot
-        o2.write_main_output()
-        self.assertEqual(len(o1.time), len(o2.time))
-        for i in range(len(o1.time)):
-            self.assertAlmostEqual(o1.time[i], o2.time[i])
+        o1 = df1.outbot.output
+        o2 = df2.outbot.output
+        self.assertEqual(len(o1['time']), len(o2['time']))
+        for i in range(len(o1['time'])):
+            self.assertAlmostEqual(o1['time'][i], o2['time'][i])
             # BELOW: relaxed delta for voltage
             # REASON: dualfoil cuts off its voltages at 5
             #   decimal places, meaning that this end-digit
             #   is subject to roundoff errors
             error = 1e-5
-            self.assertAlmostEqual(o1.potential[i], o2.potential[i],
+            self.assertAlmostEqual(o1['potential'][i], o2['potential'][i],
                                    delta=error)
-            self.assertAlmostEqual(o1.current[i], o2.current[i])
+            self.assertAlmostEqual(o1['current'][i], o2['current'][i])
 
     def test_accuracy_pycap_simulation(self):
         #
@@ -214,15 +213,14 @@ class DualfoilTestCase(unittest.TestCase):
         const_current_const_voltage = Charge(ptree)
         const_current_const_voltage.run(df2)
 
-        o1 = df1.outbot         # contains sim1 output
-        o2 = df2.outbot         # contains sim2 output
-        o2.write_main_output()
+        o1 = df1.outbot.output     # contains sim1 output
+        o2 = df2.outbot.output     # contains sim2 output
 
         # affirm we make it this far and have usable data
-        self.assertTrue(len(o1.time) > 0)
-        self.assertTrue(len(o2.time) > 0)
+        self.assertTrue(len(o1['time']) > 0)
+        self.assertTrue(len(o2['time']) > 0)
         # lengths of data should be different
-        self.assertFalse(len(o1.time) == len(o2.time))
+        self.assertFalse(len(o1['time']) == len(o2['time']))
 
         # TEST LOGIC:
         #  -Merge the two outputs into one, sorted by
@@ -230,12 +228,12 @@ class DualfoilTestCase(unittest.TestCase):
         #  -Compare the consistency of the two simulations
         #   by checking for smooth changes within the curves
         #   of the combined output lists
-        o1.time.extend(o2.time)
-        time = ar(o1.time)  # nparray
-        o1.potential.extend(o2.potential)
-        voltage = ar(o1.potential)  # nparray
-        o1.current.extend(o2.current)
-        current = ar(o1.current)  # np array
+        o1['time'].extend(o2['time'])
+        time = ar(o1['time'])  # nparray
+        o1['potential'].extend(o2['potential'])
+        voltage = ar(o1['potential'])  # nparray
+        o1['current'].extend(o2['current'])
+        current = ar(o1['current'])  # np array
         # create a dictionary with the combined output lists
         output = {'time': time,
                   'voltage': voltage,
@@ -375,8 +373,8 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
         load = 0.7  # ohms-m2
         df.evolve_one_time_step_constant_load(dt, load)
-        v = df.outbot.potential[0]
-        c = df.outbot.current[0]
+        v = df.outbot.output['potential'][0]
+        c = df.outbot.output['current'][0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
         # load should be positive
@@ -400,8 +398,8 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
         p = 15.0  # ohms-m2
         df.evolve_one_time_step_constant_power(dt, p)
-        v = df.outbot.potential[0]
-        c = df.outbot.current[0]
+        v = df.outbot.output['potential'][0]
+        c = df.outbot.output['current'][0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
         # power is always positive
