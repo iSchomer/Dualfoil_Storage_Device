@@ -310,9 +310,11 @@ class DualfoilTestCase(unittest.TestCase):
                     self.assertTrue(output['voltage'][i],
                                     output['voltage'][i-1])
                 else:  # part 2, const voltage                
-                    # current should be getting less negative
+                    # current should be getting less positive
                     self.assertTrue(output['current'][i] <=
-                                    output['current'][i-1])
+                                    output['current'][i-1],
+                                    msg=(output['current'][i-2:i+10],
+                                         output['time'][i-2:i+10]))
                     # voltage should decrease, then stay at 4.54
                     if output['voltage'][i-1] == 4.54:
                         self.assertEqual(output['voltage'][i],
@@ -396,14 +398,14 @@ class DualfoilTestCase(unittest.TestCase):
 
         # 4. constant power
         df.reset()
-        p = 15.0  # ohms-m2
+        p = -15.0  # ohms-m2
         df.evolve_one_time_step_constant_power(dt, p)
         v = df.outbot.output['potential'][0]
         c = df.outbot.output['current'][0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
-        # power is always positive
-        p_fin = abs(v_fin * c_fin)
+        # current should be negative, and voltage positive
+        p_fin = v_fin * c_fin
         # power uses the same error for the same reason
         self.assertAlmostEqual(p, p_fin, delta=error)
         # voltage will decrease as a result of maintaining
