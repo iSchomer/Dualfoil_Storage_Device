@@ -294,7 +294,7 @@ def extract_main_output(file='dualfoil5.out', path=None):
             initial stoicheometric parameter for the negative electrolyte
         pos_util : list of float
             initial stoicheometric parameter for the positive electrolyte
-        potential : list of float
+        voltage : list of float
             the potential of the cell in volts
         open_circuit_potential : list of float
             the open-circuit potential in volts
@@ -336,7 +336,7 @@ def extract_main_output(file='dualfoil5.out', path=None):
 
     # keyword variable for all output (left to right)
     output = {'time':[], 'neg_util':[], 'pos_util':[],
-              'potential':[], 'open_circuit_potential':[],
+              'voltage':[], 'open_circuit_potential':[],
               'current':[], 'temperature':[], 'heat_gen':[]}
 
     for data in data_list:
@@ -346,7 +346,7 @@ def extract_main_output(file='dualfoil5.out', path=None):
         output['time'].append(float(tmp[0]))
         output['neg_util'].append(float(tmp[1]))
         output['pos_util'].append(float(tmp[2]))
-        output['potential'].append(float(tmp[3]))
+        output['voltage'].append(float(tmp[3]))
         output['open_circuit_potential'].append(float(tmp[4]))
         # CURRENT EXPLAINED
         # Dualfoil: + for discharge, - for charge
@@ -504,7 +504,7 @@ class OutputManager:
             initial stoicheometric parameter for the negative electrolyte
         pos_util : list of float
             initial stoicheometric parameter for the positive electrolyte
-        potential : list of float
+        voltage : list of float
             the potential of the cell in volts
         open_circuit_potential : list of float
             the open-circuit potential in volts
@@ -564,7 +564,7 @@ class OutputManager:
         # main output and profiles dicts
         self.output = {'time':[], 'neg_util':[], 'pos_util':[],
                        'current':[], 'heat_gen':[], 'temperature':[],
-                       'potential':[], 'open_circuit_potential':[]}
+                       'voltage':[], 'open_circuit_potential':[]}
 
         self.profiles = {'time':[], 'distance':[], 'electrolyte_conc':[],
                          'solid_surface_conc':[], 'liquid_potential':[],
@@ -577,7 +577,7 @@ class OutputManager:
         """
         self.output = {'time':[], 'neg_util':[], 'pos_util':[],
                        'current':[], 'heat_gen':[], 'temperature':[],
-                       'potential':[], 'open_circuit_potential':[]}
+                       'voltage':[], 'open_circuit_potential':[]}
 
         self.profiles = {'time':[], 'distance':[], 'electrolyte_conc':[],
                          'solid_surface_conc':[], 'liquid_potential':[],
@@ -593,10 +593,10 @@ class OutputManager:
         float
             the voltage in volts
         """
-        if len(self.output['potential']) == 0:
+        if len(self.output['voltage']) == 0:
             return -1
         else:
-            return self.output['potential'][-1]
+            return self.output['voltage'][-1]
         
     def get_current(self):
         """

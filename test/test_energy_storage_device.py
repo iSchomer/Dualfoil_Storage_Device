@@ -169,7 +169,7 @@ class DualfoilTestCase(unittest.TestCase):
             #   decimal places, meaning that this end-digit
             #   is subject to roundoff errors
             error = 1e-5
-            self.assertAlmostEqual(o1['potential'][i], o2['potential'][i],
+            self.assertAlmostEqual(o1['voltage'][i], o2['voltage'][i],
                                    delta=error)
             self.assertAlmostEqual(o1['current'][i], o2['current'][i])
 
@@ -230,8 +230,8 @@ class DualfoilTestCase(unittest.TestCase):
         #   of the combined output lists
         o1['time'].extend(o2['time'])
         time = ar(o1['time'])  # nparray
-        o1['potential'].extend(o2['potential'])
-        voltage = ar(o1['potential'])  # nparray
+        o1['voltage'].extend(o2['voltage'])
+        voltage = ar(o1['voltage'])  # nparray
         o1['current'].extend(o2['current'])
         current = ar(o1['current'])  # np array
         # create a dictionary with the combined output lists
@@ -351,7 +351,7 @@ class DualfoilTestCase(unittest.TestCase):
         # affirm success
         # current is constant
         self.assertEqual(c, c_fin)
-        # charging means potential is increasing
+        # charging means voltage is increasing
         # change greater than 1% increase would be unrealistic
         #    for the given battery and sim time
         percent_change = (v_fin - v) / v
@@ -375,7 +375,7 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
         load = 0.7  # ohms-m2
         df.evolve_one_time_step_constant_load(dt, load)
-        v = df.outbot.output['potential'][0]
+        v = df.outbot.output['voltage'][0]
         c = df.outbot.output['current'][0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
@@ -400,7 +400,7 @@ class DualfoilTestCase(unittest.TestCase):
         df.reset()
         p = -15.0  # ohms-m2
         df.evolve_one_time_step_constant_power(dt, p)
-        v = df.outbot.output['potential'][0]
+        v = df.outbot.output['voltage'][0]
         c = df.outbot.output['current'][0]
         v_fin = df.get_voltage()
         c_fin = df.get_current()
