@@ -29,15 +29,16 @@ Dual generates the following output files:
   + each instance of `xx` is stored within the 3D array `xt`
 * Basic Organization
   + main `comp` subroutine updates `xx` using a temporary array: `c`
+  + `band` solves the six differential equations
   + `cellpot` calculates and writes the data found in dualfoil5.out
   + `nucamb` calculates and writes the data for profiles.out
 
 ###The Equations
 
-The main equations are found within the `comp` subroutine. Here is the logic for that section:
+The main equations are solved through the `comp` subroutine. Here is the logic for that section:
   + Its main loop iterates for the number of specified nodes
   + Before solving equations, several 2D arrays (# of equations by # of equations) are initialized
-  + Solve each equation, storing the updated values in the temporary arrays
+  + Set up array variables in order of equation, then call 'band' once after this
   + Update permanent arrays and repeat until each node has been calculated from left to right
 
 Below is the list of equations; each name corresponds with what it is solving for
@@ -49,8 +50,9 @@ Below is the list of equations; each name corresponds with what it is solving fo
   4. Current density
   5. Porewall flux and Butler-Volmer kinetics
   6. Ohm's Law in the matrix
-    + solves for matrix potential
-  7. Mode converge
+    + solves for matrix potential (solid phase)
+  7. None
+    + Assists with convergance
   8. Material Balance and kinetics of side reactions 1 and 2
   9. Kinetics only for side reactions 3
 
