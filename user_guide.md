@@ -43,9 +43,9 @@ The main equations are solved through the `comp` subroutine. Here is the logic f
 
 Below is the list of equations; each name corresponds with what it is solving for
   1. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516266/4e069182-5e0b-11e6-95b6-0d204e7aa404.png)
-    + uses constant volume approach
+    + Solves for solution concentrations in the separator
   2. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516267/50d90f16-5e0b-11e6-9c1a-9a199da56161.png)
-    + Solves for solution overpotential
+    + Solves for solution overpotential in the separator
   3. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516273/576abc44-5e0b-11e6-9052-fcc63dbb907c.png)
     + Solves for solid phase material balance
   4. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516278/5b5e61b6-5e0b-11e6-8e27-d689af08f67a.png)
@@ -53,7 +53,7 @@ Below is the list of equations; each name corresponds with what it is solving fo
   5. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516269/54ad0502-5e0b-11e6-9739-7d07ca3b2709.png)
     + Solves Butler-Volmer kinetics and pore wall flux 
   6. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516280/5ea0fd8e-5e0b-11e6-80c2-b8a13a72dcd4.png)
-    + solves for matrix potential (solid phase)
+    + Solves for (solid phase) matrix potential
   7. A seventh equation assists with convergance according to the code, but the equation is not listed in the documentation.
 
 ###Table of important locations 
