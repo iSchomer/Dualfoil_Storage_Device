@@ -4,19 +4,19 @@ Note: sections labeled in *italics* are unique to 5.1 code
 ##Input
 
 Dualfoil reads in all required information from the following two files:
-* dualfoil5.in (named "li-ion.in" for 5.2):
-  1. includes all the main data read in for simulation, with a discription beside each variable
+* dualfoil5.in (defaulted to "li-ion.in" for 5.2):
+  1. includes all the main data read in for simulation, with a description beside each variable
   2. *includes* `restart`, *the usage of which is described below*
 * li-ion-ebar.in which includes data for activation energies
 
 
 ##Output
 
-Dual generates the following output files:
+Dualfoil generates the following output files:
 * dualfoil5.out: provides main data such as potential and current for each timestep
 * profiles.out: includes detailed profiles accross the length of the cell for each timestep
-  +increasing the number of nodes along the length of the cell is controlled with `il2` in main input
-  +increasing the number of profiles printed from the timesteps is controlled with `il3` in main input
+  + increasing the number of nodes along the length of the cell is controlled with `il2` in main input
+  + increasing the number of profiles printed from the timesteps is controlled with `il3` in main input
 * resistances.out: tracks resistance within each compartment of the cell over time
 * halfcells.out: breaks up potential into `V neg` and `V pos`
 * *df_caebat.out: for generating CAEBAT output; four columns of unlabeled values*
@@ -29,61 +29,62 @@ Dual generates the following output files:
   + each instance of `xx` is stored within the 3D array `xt`
 * Basic Organization
   + main `comp` subroutine updates `xx` using a temporary array: `c`
-  + `band` solves the six differential equations
+  + `band` solves the coupled differential equations
   + `cellpot` calculates and writes the data found in dualfoil5.out
   + `nucamb` calculates and writes the data for profiles.out
 
-###The Equations
+###The Governing Equations
 
-The main equations are solved through the `comp` subroutine. Here is the logic for that section:
-  + Its main loop iterates for the number of specified nodes
-  + Before solving equations, several 2D arrays (# of equations by # of equations) are initialized
-  + Set up array variables in order of equation, then call 'band' once after this
-  + Update permanent arrays and repeat until each node has been calculated from left to right
+The main equations set up for solving in the `comp` subroutine. Here is the logic for that section:
+  + Its main loop iterates for the number of specified nodes across the cell
+  + Several 2D arrays (# of equations by # of equations) are initialized
+  + Array variables are set up in order of equation, then call 'band' once after this
+  + Permanent arrays are updated
+  + loop is repeated until each node has been calculated from left to right
 
 Below is the list of equations; each name corresponds with what it is solving for
-  1. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516266/4e069182-5e0b-11e6-95b6-0d204e7aa404.png)
-    + Solves for solution concentrations in the separator
-  2. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516267/50d90f16-5e0b-11e6-9c1a-9a199da56161.png)
-    + Solves for solution overpotential in the separator
-  3. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516273/576abc44-5e0b-11e6-9052-fcc63dbb907c.png)
-    + Solves for solid phase material balance
-  4. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516278/5b5e61b6-5e0b-11e6-8e27-d689af08f67a.png)
-    + Solves for current density
-  5. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516269/54ad0502-5e0b-11e6-9739-7d07ca3b2709.png)
-    + Solves Butler-Volmer kinetics and pore wall flux 
-  6. ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516280/5ea0fd8e-5e0b-11e6-80c2-b8a13a72dcd4.png)
-    + Solves for (solid phase) matrix potential
-  7. A seventh equation assists with convergance according to the code, but the equation is not listed in the documentation.
+  1. Solves for solution concentrations in the separator
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516266/4e069182-5e0b-11e6-95b6-0d204e7aa404.png)
+  2.  Solves for solution overpotential in the separator
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516267/50d90f16-5e0b-11e6-9c1a-9a199da56161.png)
+  3. Solves for solid phase material balance
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516273/576abc44-5e0b-11e6-9052-fcc63dbb907c.png)
+  4. Solves for current density
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516278/5b5e61b6-5e0b-11e6-8e27-d689af08f67a.png)
+  5. Solves Butler-Volmer kinetics and pore wall flux
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516269/54ad0502-5e0b-11e6-9739-7d07ca3b2709.png)
+  6. Solves for (solid phase) matrix potential
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17523608/36d6a218-5e29-11e6-901c-3c1c111fffcd.png)
+  7. This equation aids with convergance according to the code. It is a kintic expression for the insertion process at the cathode
+  ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17523611/3c6b3e32-5e29-11e6-8d29-207cc2fc0f3d.png)
 
 ###Table of important locations 
 
 | 5.1 Line(s) | 5.2 Line(s) | Description                                                                                        |
-|:-----------:|:-----------:|----------------------------------------------------------------------------------------------------|
-|  191-316    |  251-368    | Read in input data                                                                                 |
-| 1046-1369   | 1016-1342   | main loop for each simulation step                                                                 |
-| 1054-1255   | 1020-1200   | portion of above loop that iterates through each timestep                                          |
-|    1093     |   1128      | portion of above loop where profiles are called to be generated                                    |
-|    1163     |   1161      | can comment out this block for a constant timestep                                                 |
-| 1280-1369   | 1222-1342   | portion of above loop that prepares for new simulation step                                        |
-|  __1379__   | __1361__    | `comp` subroutine; sets up for calling `band` to solve equations and updates `xx` values            |
-|    2832     |   2892      | `calca` sub; calculates diffusion in solid particles                                               |
-|    3055     |   3114      | `erfcg` sub; error function compliment                                                             |
-|    3097     |   3156      | `band` sub; solves coupled, linear differential equations                                          |
-|    3165     |   3224      | `matinv` sub; matrix inversion program for `band`                                                  |
-|  __3223__   | __3282__    | `nucamb` sub; calculates and prints detailed profiles                                              |
-|    DNE      |   3361      | `peak` sub; calculates peak power per timestep in discharge                                        |
-|  __3305__   | __3541__    | `cellpot` sub; calculates and prints main output data per timestep                                 |
-|    3493     |   3779      | block of code where main output list is printed within `cellpot`                                   |
-|    3526     |   3821      | `sol` sub; calculates solid-phase concentration files                                              |
-|    3613     |   3908      | `mass` sub; calculates mass from densities and volume fraction                                     |
-|    3657     |   3952      | `temperature` sub; recomputes cell temperature                                                     |
-|    3867     |   4167      | `ekin` sub; evaluates Butler-Volmer equations and provides data for pos. and neg. active materials |
-|    4595     |   5231      | `prop` sub; creates a library of electrolyte properties                                            |
-|    4800     |   5834      | `vardc` sub; unclear utility                                                                       |
-|    4970     |   5981      | `band2` sub; unclear purpose distinguishable from `band`                                           |
-|    5034     |   6044      | `matinv2` sub; matrix inversion program for `band2`                                                |
-
+|:-----------:|:-----------:|---------------------------------------------------------------------------------------------------|
+|  191-316    |  251-368    | Read in input data                                                                                |
+|__1046-1369__|__1016-1342__| main loop for each simulation step                                                                |
+| 1054-1255   | 1020-1200   | portion of above loop that iterates through each timestep                                         |
+|    1093     |   1128      | portion of above loop where profiles are called to be generated                                   |
+|    1163     |   1161      | can comment out this block for a constant timestep                                                |
+| 1280-1369   | 1222-1342   | portion of above loop that prepares for new simulation step                                       |
+|  __1379__   | __1361__    | `comp` subroutine; sets up for calling `band` to solve equations and updates `xx` values          |
+|    2832     |   2892      | `calca` sub; calculates diffusion in solid particles                                              |
+|    3055     |   3114      | `erfcg` sub; error function compliment                                                            |
+|    3097     |   3156      | `band` sub; solves coupled, linear differential equations                                         |
+|    3165     |   3224      | `matinv` sub; matrix inversion program for `band`                                                 |
+|  __3223__   | __3282__    | `nucamb` sub; calculates and prints detailed profiles                                             |
+|    DNE      |   3361      | `peak` sub; calculates peak power per timestep in discharge                                       |
+|  __3305__   | __3541__    | `cellpot` sub; calculates and prints main output data per timestep                                |
+|    3493     |   3779      | block of code where main output list is printed within `cellpot`                                  |
+|    3526     |   3821      | `sol` sub; calculates solid-phase concentration files                                             |
+|    3613     |   3908      | `mass` sub; calculates mass from densities and volume fraction                                    |
+|    3657     |   3952      | `temperature` sub; recomputes cell temperature                                                    |
+|    3867     |   4167      | `ekin` sub; evaluates Butler-Volmer equations and provides data for pos. and neg. active materials|
+|    4595     |   5231      | `prop` sub; creates a library of electrolyte properties                                           |
+|    4800     |   5834      | `vardc` sub; unclear utility                                                                      |
+|    4970     |   5981      | `band2` sub; unclear purpose distinguishable from `band`                                          |
+|    5034     |   6044      | `matinv2` sub; matrix inversion program for `band2`                                               |
 
 ---
 
@@ -113,7 +114,7 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 
 * Most attempts to run a multi-leg simulation with similar format to 5.1 have failed
 * If multi-leg simulations do work, the required input is less obvious than that of 5.1 
-* When running to a cutoff potential, the main output is littered with occasional rows with a time marker of 0.000
+* When running to a cutoff potential, the main output contains occasional rows with a time marker of 0.000
 
 ###Unique to 5.1
 
@@ -123,12 +124,12 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 ###Shared issues
 
 * Running a simulation on constant voltage mode sometimes never finishes because the timesteps seemingly decrease rapidly toward 0
-  + Only occurs when attempting to start at a voltage more than a volt from its typical starting voltage.
+  + Usually occurs when attempting to start at a voltage more than one volt from its self-initalized voltage
 * Given the same input, 5.1 and 5.2 yield significantly different main output
   + This might be due to differences in the initialization process as well as within `comp`, the main compoutational subroutine
   + Another possible source for the error is `cellpot`, a subroutine tasked with updating and printing the main output data
   + These changes are provided below
-* __Note__: As a qualifier to some of the simulation issues, both Dualfoil programs used consistantly outputs a divide-by-zero error along with a few other flags even upon successful simulations; this could suggest that these issues will not be shared by other users.
+* __Note__: As a qualifier to some of the simulation issues, both Dualfoil programs used consistantly outputs a divide-by-zero error along with a few other flags even upon successful simulations; other Dualfoil users do not report such issues. This could suggest that these issues will not be shared by other users.
 
 ---
 
@@ -352,7 +353,5 @@ inside of main subroutine loop:
 
 ####Solver Equations 
 
-These are the 6 (sometimes 7) equations that the program solves in order to initialize and update its functional variables
-
 * In equation dealing with material balance in solid insertion metal, 5.1 allows for multiple sizes of variable solid-phase diffusion coefficient (5.2 allows only one)
-* 5.2 Equation 3 (Butler-volmer kinetics) has large blocks of code for pore-wall fluxes that 5.1 lacks
+* 5.2's Butler-volmer kinetics has large blocks of code for pore-wall fluxes that 5.1 lacks
