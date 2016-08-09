@@ -52,6 +52,7 @@ Below is the list of equations; each name corresponds with what it is solving fo
   4. Solves for current density
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516278/5b5e61b6-5e0b-11e6-8e27-d689af08f67a.png)
   5. Solves Butler-Volmer kinetics and pore wall flux
+  
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516269/54ad0502-5e0b-11e6-9739-7d07ca3b2709.png)
   6. Solves for (solid phase) matrix potential
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17523608/36d6a218-5e29-11e6-901c-3c1c111fffcd.png)
