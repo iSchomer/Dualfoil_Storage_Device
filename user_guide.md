@@ -61,7 +61,12 @@ Below is the list of equations; each name corresponds with what it is solving fo
 | 5.1 Line(s) | 5.2 Line(s) | Description                                                                                        |
 |:-----------:|:-----------:|----------------------------------------------------------------------------------------------------|
 |  191-316    |  251-368    | Read in input data                                                                                 |
-|  __1379__   | __1361__    | `comp` subroutine; solves main equations and updates `xx` values                                   |
+| 1046-1369   | 1016-1342   | main loop for each simulation step                                                                 |
+| 1054-1255   | 1020-1200   | portion of above loop that iterates through each timestep                                          |
+|    1093     |   1128      | portion of above loop where profiles are called to be generated                                    |
+|    1163     |   1161      | can comment out this block for a constant timestep                                                 |
+| 1280-1369   | 1222-1342   | portion of above loop that prepares for new simulation step                                        |
+|  __1379__   | __1361__    | `comp` subroutine; sets up for calling `band` to solve equations and updates `xx` values            |
 |    2832     |   2892      | `calca` sub; calculates diffusion in solid particles                                               |
 |    3055     |   3114      | `erfcg` sub; error function compliment                                                             |
 |    3097     |   3156      | `band` sub; solves coupled, linear differential equations                                          |
@@ -69,6 +74,7 @@ Below is the list of equations; each name corresponds with what it is solving fo
 |  __3223__   | __3282__    | `nucamb` sub; calculates and prints detailed profiles                                              |
 |    DNE      |   3361      | `peak` sub; calculates peak power per timestep in discharge                                        |
 |  __3305__   | __3541__    | `cellpot` sub; calculates and prints main output data per timestep                                 |
+|    3493     |   3779      | block of code where main output list is printed within `cellpot`                                   |
 |    3526     |   3821      | `sol` sub; calculates solid-phase concentration files                                              |
 |    3613     |   3908      | `mass` sub; calculates mass from densities and volume fraction                                     |
 |    3657     |   3952      | `temperature` sub; recomputes cell temperature                                                     |
@@ -77,12 +83,7 @@ Below is the list of equations; each name corresponds with what it is solving fo
 |    4800     |   5834      | `vardc` sub; unclear utility                                                                       |
 |    4970     |   5981      | `band2` sub; unclear purpose distinguishable from `band`                                           |
 |    5034     |   6044      | `matinv2` sub; matrix inversion program for `band2`                                                |
-| 1046-1369   | 1016-1342   | loop for each simulation step                                                                      |
-| 1280-1369   | 1222-1342   | portion of above loop that prepares for new simulation step                                        |
-| 1054-1255   | 1020-1200   | portion of loop that iterates through each timestep                                                |
-|    1093     |   1128      | portion of loop where profiles are called to be generated                                          |
-|  __1163__   | __1161__    | can comment out this block for a constant timestep                                                 |
-|    3493     |   3779      | block of code where main output list is printed within `cellpot`                                   |
+
 
 ---
 
@@ -101,7 +102,7 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 + Include only the current leg that will be started / continued, 
 + For updating `tt(i)`:
   + When running in terms of time, `tt(i)` will represent desired endtime, not additional length of simulation runtime
-  + When runing in terms of cutoff voltage, set `tt(i)` to the new desired cuttoff voltage 
+  + When running in terms of cutoff voltage, set `tt(i)` to the new desired cuttoff voltage 
   + If an input file has a two or more legs, `tt(i)` for the second leg and beyond will represent additional length of runtime, not endtime
 + After a simulation, the total runtime can be found as the second number on the first line of `df_restart.dat`  
 ---
@@ -110,7 +111,7 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 
 ###Unique to 5.2
 
-* Any attempts to run a multi-leg simulation with similar format to 5.1 have failed
+* Most attempts to run a multi-leg simulation with similar format to 5.1 have failed
 * If multi-leg simulations do work, the required input is less obvious than that of 5.1 
 * When running to a cutoff potential, the main output is littered with occasional rows with a time marker of 0.000
 
@@ -121,13 +122,13 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
 
 ###Shared issues
 
-* Running a simulation on constant voltage mode sometimes never finishes because the timesteps seemingly *decrease* rapidly toward 0
-  + This has only occured when it is the first leg of a simulation; charging/discharging to a constant voltage works consistently
+* Running a simulation on constant voltage mode sometimes never finishes because the timesteps seemingly decrease rapidly toward 0
+  + Only occurs when attempting to start at a voltage more than a volt from its typical starting voltage.
 * Given the same input, 5.1 and 5.2 yield significantly different main output
   + This might be due to differences in the initialization process as well as within `comp`, the main compoutational subroutine
   + Another possible source for the error is `cellpot`, a subroutine tasked with updating and printing the main output data
   + These changes are provided below
-
+* __Note__: As a qualifier to some of the simulation issues, both Dualfoil programs used consistantly outputs a divide-by-zero error along with a few other flags even upon successful simulations; this could suggest that these issues will not be shared by other users.
 
 ---
 
