@@ -45,7 +45,7 @@ The main equations set up for solving in the `comp` subroutine. Here is the logi
 Below is the list of equations; each name corresponds with what it is solving for
   1. Solves for solution concentrations in the separator
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516266/4e069182-5e0b-11e6-95b6-0d204e7aa404.png)
-  2.  Solves for solution overpotential in the separator
+  2. Solves for solution overpotential in the separator
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516267/50d90f16-5e0b-11e6-9c1a-9a199da56161.png)
   3. Solves for solid phase material balance
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516273/576abc44-5e0b-11e6-9052-fcc63dbb907c.png)
@@ -56,7 +56,7 @@ Below is the list of equations; each name corresponds with what it is solving fo
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17516269/54ad0502-5e0b-11e6-9739-7d07ca3b2709.png)
   6. Solves for (solid phase) matrix potential
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17523608/36d6a218-5e29-11e6-901c-3c1c111fffcd.png)
-  7. This equation aids with convergance according to the code. It is a kintic expression for the insertion process at the cathode
+  7. This equation aids with convergence according to the code comments. It is a kinetic expression for the insertion process at the cathode
   ![Alt text](https://cloud.githubusercontent.com/assets/19843086/17523611/3c6b3e32-5e29-11e6-8d29-207cc2fc0f3d.png)
 
 ###Table of important locations 
