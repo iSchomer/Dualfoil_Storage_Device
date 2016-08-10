@@ -107,6 +107,7 @@ Basic idea: When beginning a new simulation, `restart` should be set to False in
   + When running in terms of cutoff voltage, set `tt(i)` to the new desired cuttoff voltage 
   + If an input file has a two or more legs, `tt(i)` for the second leg and beyond will represent additional length of runtime, not endtime
 + After a simulation, the total runtime can be found as the second number on the first line of `df_restart.dat`  
+
 ---
 
 ##Problems with running
