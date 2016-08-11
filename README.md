@@ -72,7 +72,7 @@ Here is an example of some basic operations:
  device.evolve_one_time_step_constant_current(time_step, current)
  print(device.get_voltage())
 
- # can run with pycap.Charge
+ # can run with Charge from pycap
  # see help(pycap) for more details
  ptree = PropertyTree()
  # Set up a simulation that charges until it reaches 4.6V
@@ -90,7 +90,7 @@ Here is an example of some basic operations:
  data = initialize_data()
  device.reset()
  # run the simulation and plot the data
- charge = pycap.Charge(ptree)
+ charge = Charge(ptree)
  charge.run(device, data)
  plot_data(data)
  ```
