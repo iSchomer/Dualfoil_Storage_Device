@@ -3,9 +3,9 @@ See [Cap from the ORNL-CEES team](https://github.com/ORNL-CEES/Cap "Github - ORN
 
 ## Included in this repository ...
  +  a quick guide to understanding Dualfoil5 
- +  a python package that works with Pycap to realistically model batteries
- +  graphical representation of sample output data generated from Dualfoil5.2
- +  tests to verify the functionality of the `battery` package
+ +  a Python package that wraps Dualfoil's functionality into a usable and versatile class
+ +  sample simulations generated from the Python package independently and within Cap
+ +  tests to verify the functionality of the Python package
 
 ## Installation
  1. Pull the Cap image `dalg24/cap` from Docker with the following command:
@@ -40,24 +40,36 @@ Once you have completed these steps, you will have access to pycap as well as al
 
 
 ## Basic Use
- + `Dualfoil` is an instance of pycap.EnergyStorageDevice.
- + `Dualfoil` can run individual parts of a simulation, return output values, and graph those values in 3D with the help of other modules contained within the battery package.
- + For more complicated simulations, a `Dualfoil` object can be passed into one of Pycap's experiments, such as `CyclicChargeDischarge`
+`Dualfoil` is child of `pycap.EnergyStorageDevice`. It has functionality both independently and within Cap.
 
- Here is an example of some basic operations:
++ Within this Python package
+   + Alter Dualfoil's input file
+   + Run individual parts of a simulation through class methods
+   + Parse output files and stores data in a dictionary
+   + Plot Dualfoil-specific profile data in 3D
++ Within Cap
+   + Access input and output using keywords
+   + Run an `Experiment`, which combines base simulation types to simulate established electrochemical measurement techniques
+   + Plot output for clear visualization of results
+
+Here is an example of some basic operations:
+
  ```python
  # add battery module to path
  import sys
  sys.path.append('/notebooks')
 
- from pycap import PropertyTree, Charge
  from battery import Dualfoil
+ from pycap import PropertyTree, Charge
+ from pycap import initialize_data, plot_data
 
  # can run dualfoil sim manually 
  device = Dualfoil(path='docker/dualfoil5-1')
  print(device.get_voltage())
- # charge for 1 minute with a constant current of 10 amperes
- device.evolve_one_time_step_constant_current(60, 10.0)
+ # charge for 1 minute with a constant current of 2 amperes
+ time_step = 60
+ current = 2.0
+ device.evolve_one_time_step_constant_current(time_step, current)
  print(device.get_voltage())
 
  # can run with pycap.Charge
@@ -75,11 +87,10 @@ Once you have completed these steps, you will have access to pycap as well as al
  ptree.put_double('charge_voltage_finish_max_time', 120)
  ptree.put_double('charge_voltage_finish_current_limit', 5.0)
  
- from pycap import initialize_data, plot_data
  data = initialize_data()
  device.reset()
  # run the simulation and plot the data
- charge_with_voltage_finish = pycap.Charge(ptree)
- charge_with_voltage_finish.run(device, data)
+ charge = pycap.Charge(ptree)
+ charge.run(device, data)
  plot_data(data)
  ```
