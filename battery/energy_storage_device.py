@@ -142,6 +142,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
 
     def evolve_one_time_step_constant_voltage(self, time_step, voltage):
         time_step = time_step / 60
@@ -154,6 +157,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
 
     def evolve_one_time_step_constant_power(self, time_step, power):
         time_step = time_step / 60
@@ -171,6 +177,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
 
     def evolve_one_time_step_constant_load(self, time_step, load):
         time_step = time_step / 60
@@ -183,6 +192,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
 
     def evolve_to_voltage_constant_current(self, current, cutoff):
         """
@@ -208,6 +220,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
 
     def evolve_one_time_step_linear_current(self, time_step, current,
                                             divisor=4):
@@ -258,6 +273,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
         # indicate computation progress
         print('.', end='')
 
@@ -303,6 +321,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
         # indicate computation progress
         print('.', end='')
 
@@ -358,6 +379,9 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
         # indicate computation progress
         print('.', end='')
 
@@ -405,5 +429,8 @@ class Dualfoil(EnergyStorageDevice):
             err = str(err)
             err = err.split('] ')[-1]
             print("Error when executing dualfoil: ", err)
+        except RuntimeError as err:
+            print(err)
+            raise
         # indicate computation progress
         print('.', end='')

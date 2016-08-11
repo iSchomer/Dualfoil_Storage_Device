@@ -315,29 +315,32 @@ def extract_main_output(file='dualfoil5.out', path=None):
         fpath = file
     with open(fpath, 'r') as fin:
         data_list = []
+        
+        line = fin.readline()
 
-        for line in fin.readlines():
-            if line.find('(min)') != -1:
-                # found it! stop here
-                break
-            x += 1
+        # find start of CSV portion of file
+        while line.find('(min)') == -1:
+            line = fin.readline()
 
-    # now read lines again
-    with open(fpath, 'r') as fin:
-
-        for line in fin.readlines()[x+2:]:
+        while line != '':
             # only take lines with convertable data
             if line.find(',') != -1:
+                # halt if we get NaN
+                if line.find('NaN') != -1:
+                    raise RuntimeError('Dualfoil did not converge.')
                 # make sure we are not taking in a copy
                 if line != previous:
                     previous = line
                     line = line.rstrip('\n').rstrip(' ').lstrip(' ')
                     data_list.append(line)
 
+            # read in the next line
+            line = fin.readline()
+
     # keyword variable for all output (left to right)
-    output = {'time':[], 'neg_util':[], 'pos_util':[],
-              'voltage':[], 'open_circuit_potential':[],
-              'current':[], 'temperature':[], 'heat_gen':[]}
+    output = {'time': [], 'neg_util': [], 'pos_util': [],
+              'voltage': [], 'open_circuit_potential': [],
+              'current': [], 'temperature': [], 'heat_gen': []}
 
     for data in data_list:
         tmp = data.split(',')
@@ -413,21 +416,26 @@ def extract_profiles(file='profiles.out', path=None):
         fpath = path + file
     else:
         fpath = path
+
+    profile_list = []
     with open(fpath, 'r') as fin:
-        profile_list = []
-        profile = []
+        block = []
 
-        # ignore the first line
-        for line in fin.readlines()[1:]:
+        #skip first line
+        line = fin.readline()
 
-            line = line.rstrip('\n').rstrip(' ')
-            if line == '':
-                if profile != []:
-                    profile_list.append(profile)
-                    profile = []
-                continue
-            # print(line)
-            profile.append(line)
+        while line != '':
+            line = fin.readline()
+            tmp = line.rstrip('\n').rstrip(' ')
+            # check for nonconvergence
+            if tmp.find('NaN') != -1:
+                raise RuntimeError('Dualfoil did not converge.')
+            if tmp == '': # end of a block
+                if len(block) > 0:
+                    profile_list.append(block)
+                    block = []
+            else:
+                block.append(tmp)
 
     # dict to contain all data for each time chunk
     output = {'distance':[], 'electrolyte_conc':[],
