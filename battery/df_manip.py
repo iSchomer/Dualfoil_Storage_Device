@@ -253,7 +253,7 @@ def get_total_time(path=None, restart_capable=True):
     """
 
     if not restart_capable:
-        print('This feature is only applicable when working with dualfoil5.2')
+        print('This feature is only applicable when working with dualfoil5.1')
         return
 
     if path is None:
